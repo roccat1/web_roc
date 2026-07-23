@@ -8,11 +8,16 @@
 </head>
 <body>
     <header>
-        <div class="brand-row">
-            <span class="status-led"></span>
-            <span class="brand-label">Raspberry Login</span>
+        <div class="header-bar">
+            <div class="brand-row">
+                <span class="status-led"></span>
+                <span class="brand-label">Raspberry Login</span>
+            </div>
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Abrir menu">
+                <span></span><span></span><span></span>
+            </button>
         </div>
-        <nav>
+        <nav id="nav-menu">
             <a href="{{ url_for('index') }}">Inicio</a>
             {% if session.get('usuario_id') %}
                 <a href="{{ url_for('finanzas') }}">Finanzas</a>
@@ -40,5 +45,30 @@
 
         {% block contenido %}{% endblock %}
     </main>
+
+    <script>
+        // Menu desplegable de navegacion: en pantallas estrechas el <nav>
+        // esta oculto y este boton (con pinta de hamburguesa) lo muestra u
+        // oculta. En pantallas mas anchas el CSS ya lo deja siempre visible
+        // y este boton se oculta solo, sin tocar nada aqui.
+        (function () {
+            var boton = document.getElementById("nav-toggle");
+            var menu = document.getElementById("nav-menu");
+            if (!boton || !menu) return;
+
+            boton.addEventListener("click", function () {
+                var abierto = menu.classList.toggle("abierto");
+                boton.setAttribute("aria-expanded", abierto ? "true" : "false");
+            });
+
+            // Al pulsar cualquier enlace del menu, lo cerramos.
+            menu.querySelectorAll("a").forEach(function (enlace) {
+                enlace.addEventListener("click", function () {
+                    menu.classList.remove("abierto");
+                    boton.setAttribute("aria-expanded", "false");
+                });
+            });
+        })();
+    </script>
 </body>
 </html>
