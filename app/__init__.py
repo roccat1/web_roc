@@ -14,10 +14,17 @@ constantes aqui, para que sigan estando disponibles como
 """
 
 import os
+from datetime import timedelta
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-from config import SECRET_KEY
+from config import (
+    SECRET_KEY,
+    SESSION_LIFETIME_DIAS,
+    SESSION_COOKIE_SECURE,
+    DETRAS_DE_PROXY,
+)
 
 # Carpeta raiz del proyecto (un nivel por encima de esta carpeta "app"),
 # que es donde viven "templates/" y "static/". Se indica de forma
@@ -34,6 +41,20 @@ app = Flask(
 # Esta clave se usa para proteger las sesiones (cookies). Se configura en
 # el archivo .env (variable SECRET_KEY), no aqui.
 app.secret_key = SECRET_KEY
+
+# Si la web esta detras de un proxy que termina el HTTPS (ngrok, Nginx,
+# Cloudflare Tunnel...), esto hace que Flask entienda que la conexion
+# original era HTTPS aunque a el le llegue por HTTP desde el proxy.
+# Se activa con DETRAS_DE_PROXY=True en el .env.
+if DETRAS_DE_PROXY:
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# Mantener la sesion iniciada durante varios dias en vez de que se
+# cierre sola al cerrar el navegador (se activa marcando
+# session.permanent = True al hacer login, en routes_auth.py).
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=SESSION_LIFETIME_DIAS)
+app.config["SESSION_COOKIE_SECURE"] = SESSION_COOKIE_SECURE
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 from .auth_utils import formatear_euros
 

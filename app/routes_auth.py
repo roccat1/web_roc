@@ -64,6 +64,7 @@ def login():
             flash("Usuario o contrasena incorrectos.")
             return redirect(url_for("login"))
 
+        session.permanent = True
         session["usuario_id"] = usuario["id"]
         session["username"] = usuario["username"]
         return redirect(url_for("dashboard"))

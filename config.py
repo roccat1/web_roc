@@ -65,6 +65,25 @@ FLASK_HOST = _texto("FLASK_HOST", "0.0.0.0")
 FLASK_PORT = _entero("FLASK_PORT", 5000)
 FLASK_DEBUG = _booleano("FLASK_DEBUG", True)
 
+# Cuantos dias se mantiene la sesion iniciada sin tener que volver a
+# meter usuario y contrasena.
+SESSION_LIFETIME_DIAS = _entero("SESSION_LIFETIME_DIAS", 30)
+
+# Si SOLO entras a la web por HTTPS (por ejemplo a traves de ngrok, o de
+# un dominio con certificado), pon esto en True para que la cookie de
+# sesion vaya marcada como seguras. OJO: si tambien entras por HTTP en tu
+# red local (ej. http://192.168.1.50:5000 desde el movil), dejalo en
+# False, o el navegador se negara a guardar esa cookie por HTTP y no
+# podras iniciar sesion.
+SESSION_COOKIE_SECURE = _booleano("SESSION_COOKIE_SECURE", False)
+
+# Si la web esta detras de un proxy que hace de intermediario y termina
+# el HTTPS (ngrok, Nginx, Cloudflare Tunnel...), activa esto para que
+# Flask sepa que la conexion original del navegador era HTTPS aunque a
+# el le llegue por HTTP desde el proxy. Necesario para que
+# SESSION_COOKIE_SECURE funcione bien detras de ngrok.
+DETRAS_DE_PROXY = _booleano("DETRAS_DE_PROXY", False)
+
 # =================================================================
 # Bot de Telegram (bot.py)
 # =================================================================

@@ -103,9 +103,21 @@ valores por defecto de abajo, para que la app funcione igualmente.
 | `FLASK_HOST` | Direccion donde escucha la web | `0.0.0.0` (accesible desde tu red) |
 | `FLASK_PORT` | Puerto donde escucha la web | `5000` |
 | `FLASK_DEBUG` | Modo debug de Flask (`True`/`False`) | `True` |
+| `SESSION_LIFETIME_DIAS` | Dias que se mantiene la sesion iniciada | `30` |
+| `SESSION_COOKIE_SECURE` | Cookie de sesion solo por HTTPS (`True`/`False`) | `False` |
+| `DETRAS_DE_PROXY` | La web esta detras de ngrok/Nginx/etc. (`True`/`False`) | `False` |
 | `TELEGRAM_BOT_TOKEN` | Token del bot, te lo da @BotFather | (vacio; el bot no arranca sin esto) |
 | `TELEGRAM_TIMEZONE` | Zona horaria del aviso diario de caducidades | `Europe/Madrid` |
 | `TELEGRAM_AVISO_HORA` | Hora del aviso diario (formato `HH:MM`) | `09:00` |
+
+Si accedes solo desde tu red local por `http://`, deja `SESSION_COOKIE_SECURE`
+y `DETRAS_DE_PROXY` en `False` (los valores por defecto). Si expones la web
+a internet a traves de algo que sirve por HTTPS, como **ngrok**, ponlos
+ambos en `True`: sin `DETRAS_DE_PROXY=True`, Flask no se entera de que la
+conexion real es HTTPS, y sin `SESSION_COOKIE_SECURE=True` esa cookie no
+se aprovecha del HTTPS. Si usas ambos accesos a la vez (red local por
+HTTP y ngrok por HTTPS), tendras que dejar `SESSION_COOKIE_SECURE=False`,
+ya que un navegador nunca guarda una cookie "segura" que le llega por HTTP.
 
 Tanto `run.py` como `bot.py` importan estos valores desde `config.py`,
 que es quien realmente lee el `.env` (usando la libreria
