@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva operacion{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Volver a finanzas</a>
+
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Registrar</span>
+    <h1>Nueva operacion</h1>
+    <p class="subtitle">Elige el tipo, la cuenta y la categoria</p>
+
+    <div class="header-finanzas" style="margin-top:0; margin-bottom:20px;">
+        <div class="acciones">
+            <button type="button" id="btn-modo-formulario" class="btn btn-primario btn-pequeno">Formulario</button>
+            <button type="button" id="btn-modo-guiado" class="btn btn-pequeno">Paso a paso, como el bot</button>
+        </div>
+    </div>
+
+    <!-- El mismo <form> lo rellenan tanto el modo formulario como el modo
+         guiado: al final los dos mandan los mismos campos al servidor. -->
+    <form method="POST" id="formulario-operacion">
+
+        <div class="card" id="modo-formulario">
+            <div class="campo">
+                <label for="tipo">Tipo de operacion</label>
+                <select id="tipo" name="tipo" required>
+                    <option value="gasto">Gasto</option>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="transferencia">Transferencia entre cuentas</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label id="etiqueta-cuenta" for="cuenta_id">Cuenta</label>
+                <select id="cuenta_id" name="cuenta_id" required>
+                    {% for cuenta in cuentas %}
+                        <option value="{{ cuenta['id'] }}">{{ cuenta['nombre'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="campo" id="campo-destino" style="display:none;">
+                <label for="cuenta_destino_id">Cuenta destino</label>
+                <select id="cuenta_destino_id" name="cuenta_destino_id">
+                    {% for cuenta in cuentas %}
+                        <option value="{{ cuenta['id'] }}">{{ cuenta['nombre'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="campo" id="campo-categoria">
+                <label for="categoria_id">Categoria</label>
+                <select id="categoria_id" name="categoria_id"></select>
+            </div>
+
+            <div class="campo" id="campo-subcategoria">
+                <label for="subcategoria_id">Subcategoria</label>
+                <select id="subcategoria_id" name="subcategoria_id"></select>
+            </div>
+
+            <div class="campo">
+                <label for="monto">Importe (€)</label>
+                <input type="number" id="monto" name="monto" step="0.01" min="0.01" required>
+            </div>
+
+            <div class="campo">
+                <label for="fecha">Fecha</label>
+                <input type="date" id="fecha" name="fecha" value="{{ hoy }}" required>
+            </div>
+
+            <div class="campo">
+                <label for="descripcion">Descripcion (opcional)</label>
+                <input type="text" id="descripcion" name="descripcion">
+            </div>
+
+            <button type="submit">Guardar operacion</button>
+        </div>
+
+        <!-- Modo guiado: va preguntando de una en una las mismas cosas que
+             el formulario de arriba, con botones para elegir, y al final
+             rellena esos mismos campos y envia el formulario. -->
+        <div class="card" id="modo-guiado" style="display:none;">
+            <div class="progreso-pasos" id="progreso-pasos"></div>
+
+            <span class="eyebrow" id="guiado-titulo">Paso 1</span>
+            <h2 id="guiado-pregunta" style="font-family: var(--font-mono); font-size:17px; margin: 4px 0 20px;"></h2>
+
+            <div id="guiado-opciones-botones" class="opciones-guiado"></div>
+            <div id="guiado-opciones-input" style="display:none;"></div>
+            <div id="guiado-resumen" style="display:none;"></div>
+
+            <div style="margin-top:22px; display:flex; justify-content:center; gap:8px;">
+                <button type="button" id="guiado-atras" class="btn btn-pequeno" style="display:none;">&larr; Atras</button>
+                <button type="button" id="guiado-reiniciar" class="btn btn-pequeno" style="display:none;">Empezar de nuevo</button>
+            </div>
+        </div>
+    </form>
+
+    {% if not categorias %}
+        <p class="vacio">
+            Aun no tienes categorias para gastos e ingresos.
+            <a href="{{ url_for('finanzas_categorias') }}" style="color: var(--green);">Crea la primera aqui</a>.
+        </p>
+    {% endif %}
+
+    <script>
+        // Datos que nos manda Flask: todas las categorias del usuario, cada
+        // una con su lista de subcategorias, las cuentas, y las cuentas
+        // predefinidas por tipo de operacion. Con esto el navegador puede
+        // montar los dos modos (formulario y paso a paso) sin recargar la
+        // pagina.
+        const categorias = {{ categorias | tojson }};
+        const cuentas = {{ cuentas_json | tojson }};
+        const predefinidas = {{ predefinidas | tojson }};
+
+        /* =========================================================
+           MODO FORMULARIO (el de siempre, con los <select> normales)
+           ========================================================= */
+
+        const selectTipo = document.getElementById('tipo');
+        const selectCuenta = document.getElementById('cuenta_id');
+        const etiquetaCuenta = document.getElementById('etiqueta-cuenta');
+        const campoDestino = document.getElementById('campo-destino');
+        const selectDestino = document.getElementById('cuenta_destino_id');
+        const campoCategoria = document.getElementById('campo-categoria');
+        const selectCategoria = document.getElementById('categoria_id');
+        const campoSubcategoria = document.getElementById('campo-subcategoria');
+        const selectSubcategoria = document.getElementById('subcategoria_id');
+
+        function actualizarCategorias() {
+            const tipo = selectTipo.value;
+            selectCategoria.innerHTML = '';
+
+            if (tipo === 'transferencia') {
+                campoCategoria.style.display = 'none';
+                campoSubcategoria.style.display = 'none';
+                campoDestino.style.display = 'block';
+                etiquetaCuenta.textContent = 'Cuenta origen';
+                selectCategoria.required = false;
+                selectSubcategoria.required = false;
+                selectDestino.required = true;
+            } else {
+                campoCategoria.style.display = 'block';
+                campoSubcategoria.style.display = 'block';
+                campoDestino.style.display = 'none';
+                etiquetaCuenta.textContent = 'Cuenta';
+                selectCategoria.required = true;
+                selectSubcategoria.required = true;
+                selectDestino.required = false;
+
+                categorias
+                    .filter(cat => cat.tipo === tipo)
+                    .forEach(cat => {
+                        const opcion = document.createElement('option');
+                        opcion.value = cat.id;
+                        opcion.textContent = cat.nombre;
+                        selectCategoria.appendChild(opcion);
+                    });
+                actualizarSubcategorias();
+            }
+        }
+
+        function actualizarSubcategorias() {
+            selectSubcategoria.innerHTML = '';
+            const categoriaId = parseInt(selectCategoria.value, 10);
+            const categoria = categorias.find(cat => cat.id === categoriaId);
+
+            if (categoria) {
+                categoria.subcategorias.forEach(sub => {
+                    const opcion = document.createElement('option');
+                    opcion.value = sub.id;
+                    opcion.textContent = sub.nombre;
+                    selectSubcategoria.appendChild(opcion);
+                });
+            }
+        }
+
+        function aplicarCuentaPredefinida() {
+            const cuentaPredefinida = predefinidas[selectTipo.value];
+            if (cuentaPredefinida) {
+                selectCuenta.value = cuentaPredefinida;
+            }
+        }
+
+        selectTipo.addEventListener('change', () => {
+            actualizarCategorias();
+            aplicarCuentaPredefinida();
+        });
+        selectCategoria.addEventListener('change', actualizarSubcategorias);
+
+        // Estado inicial al cargar la pagina (tipo = "gasto" por defecto)
+        actualizarCategorias();
+        aplicarCuentaPredefinida();
+
+        /* =========================================================
+           CAMBIAR ENTRE LOS DOS MODOS
+           ========================================================= */
+
+        const modoFormulario = document.getElementById('modo-formulario');
+        const modoGuiado = document.getElementById('modo-guiado');
+        const btnModoFormulario = document.getElementById('btn-modo-formulario');
+        const btnModoGuiado = document.getElementById('btn-modo-guiado');
+
+        function activarModoFormulario() {
+            modoFormulario.style.display = 'block';
+            modoGuiado.style.display = 'none';
+            btnModoFormulario.classList.add('btn-primario');
+            btnModoGuiado.classList.remove('btn-primario');
+        }
+
+        function activarModoGuiado() {
+            modoFormulario.style.display = 'none';
+            modoGuiado.style.display = 'block';
+            btnModoGuiado.classList.add('btn-primario');
+            btnModoFormulario.classList.remove('btn-primario');
+            reiniciarGuiado();
+        }
+
+        btnModoFormulario.addEventListener('click', activarModoFormulario);
+        btnModoGuiado.addEventListener('click', activarModoGuiado);
+
+        /* =========================================================
+           MODO GUIADO (paso a paso, con botones, como el bot de Telegram)
+           ========================================================= */
+
+        let estadoGuiado = {};
+
+        function secuenciaDePasos(tipo) {
+            if (tipo === 'transferencia') {
+                return ['tipo', 'importe', 'cuenta_origen', 'cuenta_destino', 'descripcion', 'confirmar'];
+            }
+            return ['tipo', 'importe', 'categoria', 'subcategoria', 'cuenta', 'descripcion', 'confirmar'];
+        }
+
+        function reiniciarGuiado() {
+            estadoGuiado = {
+                paso: 'tipo', tipo: null, monto: null,
+                categoria_id: null, categoria_nombre: null,
+                subcategoria_id: null, subcategoria_nombre: null,
+                cuenta_id: null, cuenta_nombre: null,
+                cuenta_destino_id: null, cuenta_destino_nombre: null,
+                descripcion: '', historial: [],
+            };
+            renderizarPasoGuiado();
+        }
+
+        function irAPasoGuiado(paso) {
+            estadoGuiado.historial.push(estadoGuiado.paso);
+            estadoGuiado.paso = paso;
+            renderizarPasoGuiado();
+        }
+
+        function formatoEuros(valor) {
+            return valor.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+        }
+
+        function pintarProgreso() {
+            const secuencia = secuenciaDePasos(estadoGuiado.tipo || 'gasto');
+            const indiceActual = secuencia.indexOf(estadoGuiado.paso);
+            const contenedor = document.getElementById('progreso-pasos');
+            contenedor.innerHTML = '';
+            secuencia.forEach((paso, i) => {
+                const punto = document.createElement('span');
+                if (i < indiceActual) punto.classList.add('hecho');
+                else if (i === indiceActual) punto.classList.add('actual');
+                contenedor.appendChild(punto);
+            });
+        }
+
+        // Muestra una lista de botones para elegir una opcion. 'lista' es un
+        // array de {texto, valor}; al pulsar uno se llama a onElegir(valor).
+        function mostrarOpcionesGuiado(lista, onElegir) {
+            const contenedorBotones = document.getElementById('guiado-opciones-botones');
+            const contenedorInput = document.getElementById('guiado-opciones-input');
+            const contenedorResumen = document.getElementById('guiado-resumen');
+
+            contenedorInput.style.display = 'none';
+            contenedorResumen.style.display = 'none';
+            contenedorBotones.style.display = 'flex';
+            contenedorBotones.innerHTML = '';
+
+            lista.forEach(opcion => {
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.textContent = opcion.texto;
+                boton.addEventListener('click', () => onElegir(opcion.valor));
+                contenedorBotones.appendChild(boton);
+            });
+        }
+
+        // Muestra un campo de texto/numero con un boton "Siguiente" (y
+        // "Omitir" si permitirVacio=true). Al confirmar llama a onConfirmar(valor).
+        function mostrarInputGuiado(tipoInput, onConfirmar, permitirVacio) {
+            const contenedorBotones = document.getElementById('guiado-opciones-botones');
+            const contenedorInput = document.getElementById('guiado-opciones-input');
+            const contenedorResumen = document.getElementById('guiado-resumen');
+
+            contenedorBotones.style.display = 'none';
+            contenedorResumen.style.display = 'none';
+            contenedorInput.style.display = 'block';
+            contenedorInput.innerHTML = '';
+
+            const input = document.createElement('input');
+            input.type = tipoInput;
+            input.style.width = '100%';
+            if (tipoInput === 'number') {
+                input.step = '0.01';
+                input.min = '0.01';
+                input.placeholder = 'Ej: 12.50';
+            }
+            contenedorInput.appendChild(input);
+            input.focus();
+
+            const filaBotones = document.createElement('div');
+            filaBotones.style.marginTop = '14px';
+            filaBotones.style.display = 'flex';
+            filaBotones.style.gap = '8px';
+
+            const botonSiguiente = document.createElement('button');
+            botonSiguiente.type = 'button';
+            botonSiguiente.textContent = 'Siguiente';
+            botonSiguiente.className = 'btn btn-primario';
+            botonSiguiente.style.flex = '1';
+            botonSiguiente.addEventListener('click', () => onConfirmar(input.value));
+            filaBotones.appendChild(botonSiguiente);
+
+            if (permitirVacio) {
+                const botonOmitir = document.createElement('button');
+                botonOmitir.type = 'button';
+                botonOmitir.textContent = 'Omitir';
+                botonOmitir.className = 'btn';
+                botonOmitir.addEventListener('click', () => onConfirmar(''));
+                filaBotones.appendChild(botonOmitir);
+            }
+
+            contenedorInput.appendChild(filaBotones);
+
+            input.addEventListener('keydown', (evento) => {
+                if (evento.key === 'Enter') {
+                    evento.preventDefault();
+                    onConfirmar(input.value);
+                }
+            });
+        }
+
+        function crearLineaResumen(etiqueta, valor) {
+            const linea = document.createElement('div');
+            linea.className = 'resumen-linea';
+            const spanEtiqueta = document.createElement('span');
+            spanEtiqueta.textContent = etiqueta;
+            const spanValor = document.createElement('strong');
+            spanValor.textContent = valor;
+            linea.appendChild(spanEtiqueta);
+            linea.appendChild(spanValor);
+            return linea;
+        }
+
+        function mostrarResumenGuiado() {
+            document.getElementById('guiado-opciones-botones').style.display = 'none';
+            document.getElementById('guiado-opciones-input').style.display = 'none';
+            const resumen = document.getElementById('guiado-resumen');
+            resumen.style.display = 'block';
+            resumen.innerHTML = '';
+
+            const etiquetaTipo = { gasto: 'Gasto', ingreso: 'Ingreso', transferencia: 'Transferencia' }[estadoGuiado.tipo];
+            resumen.appendChild(crearLineaResumen('Tipo', etiquetaTipo));
+            resumen.appendChild(crearLineaResumen('Importe', formatoEuros(estadoGuiado.monto)));
+
+            if (estadoGuiado.tipo === 'transferencia') {
+                resumen.appendChild(crearLineaResumen('Origen', estadoGuiado.cuenta_nombre));
+                resumen.appendChild(crearLineaResumen('Destino', estadoGuiado.cuenta_destino_nombre));
+            } else {
+                resumen.appendChild(crearLineaResumen('Categoria', estadoGuiado.categoria_nombre + ' > ' + estadoGuiado.subcategoria_nombre));
+                resumen.appendChild(crearLineaResumen('Cuenta', estadoGuiado.cuenta_nombre));
+            }
+            if (estadoGuiado.descripcion) {
+                resumen.appendChild(crearLineaResumen('Descripcion', estadoGuiado.descripcion));
+            }
+
+            const botonGuardar = document.createElement('button');
+            botonGuardar.type = 'button';
+            botonGuardar.className = 'btn btn-primario';
+            botonGuardar.style.width = '100%';
+            botonGuardar.style.marginTop = '18px';
+            botonGuardar.textContent = 'Guardar operacion';
+            botonGuardar.addEventListener('click', () => {
+                document.getElementById('formulario-operacion').requestSubmit();
+            });
+            resumen.appendChild(botonGuardar);
+        }
+
+        function renderizarPasoGuiado() {
+            pintarProgreso();
+            document.getElementById('guiado-atras').style.display = estadoGuiado.historial.length ? 'inline-block' : 'none';
+            document.getElementById('guiado-reiniciar').style.display = estadoGuiado.paso === 'confirmar' ? 'inline-block' : 'none';
+
+            const pregunta = document.getElementById('guiado-pregunta');
+            const titulo = document.getElementById('guiado-titulo');
+
+            if (estadoGuiado.paso === 'tipo') {
+                titulo.textContent = 'Paso 1';
+                pregunta.textContent = '¿Que quieres registrar?';
+                mostrarOpcionesGuiado([
+                    { texto: 'Gasto', valor: 'gasto' },
+                    { texto: 'Ingreso', valor: 'ingreso' },
+                    { texto: 'Transferencia entre cuentas', valor: 'transferencia' },
+                ], (valor) => {
+                    estadoGuiado.tipo = valor;
+                    selectTipo.value = valor;
+                    actualizarCategorias();
+                    aplicarCuentaPredefinida();
+                    irAPasoGuiado('importe');
+                });
+
+            } else if (estadoGuiado.paso === 'importe') {
+                titulo.textContent = 'Paso 2';
+                pregunta.textContent = '¿Cuanto?';
+                mostrarInputGuiado('number', (valorTexto) => {
+                    const monto = parseFloat(valorTexto.replace(',', '.'));
+                    if (!monto || monto <= 0) {
+                        alert('Escribe un importe valido, mayor que 0.');
+                        return;
+                    }
+                    estadoGuiado.monto = monto;
+                    document.getElementById('monto').value = monto;
+                    irAPasoGuiado(estadoGuiado.tipo === 'transferencia' ? 'cuenta_origen' : 'categoria');
+                }, false);
+
+            } else if (estadoGuiado.paso === 'categoria') {
+                titulo.textContent = 'Paso 3';
+                pregunta.textContent = 'Elige una categoria';
+                const lista = categorias.filter(cat => cat.tipo === estadoGuiado.tipo);
+                mostrarOpcionesGuiado(lista.map(cat => ({ texto: cat.nombre, valor: cat })), (categoria) => {
+                    estadoGuiado.categoria_id = categoria.id;
+                    estadoGuiado.categoria_nombre = categoria.nombre;
+                    selectCategoria.value = categoria.id;
+                    actualizarSubcategorias();
+                    irAPasoGuiado('subcategoria');
+                });
+
+            } else if (estadoGuiado.paso === 'subcategoria') {
+                titulo.textContent = 'Paso 4';
+                pregunta.textContent = 'Elige una subcategoria';
+                const categoria = categorias.find(cat => cat.id === estadoGuiado.categoria_id);
+                const lista = categoria ? categoria.subcategorias : [];
+                mostrarOpcionesGuiado(lista.map(sub => ({ texto: sub.nombre, valor: sub })), (sub) => {
+                    estadoGuiado.subcategoria_id = sub.id;
+                    estadoGuiado.subcategoria_nombre = sub.nombre;
+                    selectSubcategoria.value = sub.id;
+                    irAPasoGuiado('cuenta');
+                });
+
+            } else if (estadoGuiado.paso === 'cuenta') {
+                titulo.textContent = 'Paso 5';
+                pregunta.textContent = '¿De que cuenta?';
+                mostrarOpcionesGuiado(cuentas.map(c => ({ texto: c.nombre, valor: c })), (cuenta) => {
+                    estadoGuiado.cuenta_id = cuenta.id;
+                    estadoGuiado.cuenta_nombre = cuenta.nombre;
+                    selectCuenta.value = cuenta.id;
+                    irAPasoGuiado('descripcion');
+                });
+
+            } else if (estadoGuiado.paso === 'cuenta_origen') {
+                titulo.textContent = 'Paso 3';
+                pregunta.textContent = '¿Desde que cuenta sale el dinero?';
+                mostrarOpcionesGuiado(cuentas.map(c => ({ texto: c.nombre, valor: c })), (cuenta) => {
+                    estadoGuiado.cuenta_id = cuenta.id;
+                    estadoGuiado.cuenta_nombre = cuenta.nombre;
+                    selectCuenta.value = cuenta.id;
+                    irAPasoGuiado('cuenta_destino');
+                });
+
+            } else if (estadoGuiado.paso === 'cuenta_destino') {
+                titulo.textContent = 'Paso 4';
+                pregunta.textContent = '¿A que cuenta llega el dinero?';
+                const lista = cuentas.filter(c => c.id !== estadoGuiado.cuenta_id);
+                mostrarOpcionesGuiado(lista.map(c => ({ texto: c.nombre, valor: c })), (cuenta) => {
+                    estadoGuiado.cuenta_destino_id = cuenta.id;
+                    estadoGuiado.cuenta_destino_nombre = cuenta.nombre;
+                    selectDestino.value = cuenta.id;
+                    irAPasoGuiado('descripcion');
+                });
+
+            } else if (estadoGuiado.paso === 'descripcion') {
+                titulo.textContent = 'Ultimo paso';
+                pregunta.textContent = '¿Alguna descripcion? (opcional)';
+                mostrarInputGuiado('text', (valorTexto) => {
+                    estadoGuiado.descripcion = valorTexto.trim();
+                    document.getElementById('descripcion').value = estadoGuiado.descripcion;
+                    irAPasoGuiado('confirmar');
+                }, true);
+
+            } else if (estadoGuiado.paso === 'confirmar') {
+                titulo.textContent = 'Confirmar';
+                pregunta.textContent = 'Revisa los datos antes de guardar';
+                mostrarResumenGuiado();
+            }
+        }
+
+        document.getElementById('guiado-atras').addEventListener('click', () => {
+            if (!estadoGuiado.historial.length) return;
+            estadoGuiado.paso = estadoGuiado.historial.pop();
+            renderizarPasoGuiado();
+        });
+        document.getElementById('guiado-reiniciar').addEventListener('click', reiniciarGuiado);
+    </script>
+{% endblock %}

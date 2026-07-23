@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block titulo %}Caca{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Seguimiento</span>
+    <h1 style="text-align:center;">Registro de caca</h1>
+    <p class="subtitle">Lleva la cuenta y comparala con tus amigos</p>
+
+    <div class="header-finanzas" style="margin-top:20px;">
+        <div class="acciones">
+            <a href="{{ url_for('caca_estadisticas') }}" class="btn btn-primario">Ver estadisticas</a>
+        </div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+        <div id="estado-inicial">
+            <button type="button" id="btn-registrar-ahora" class="btn btn-primario" style="font-size:16px; padding:22px; width:100%;">
+                &#128169; Registrar ahora
+            </button>
+        </div>
+
+        <div id="estado-confirmar" style="display:none;">
+            <p style="color: var(--text-muted); margin-top:0;">Confirma la hora</p>
+            <p style="font-family: var(--font-mono); font-size:32px; color: var(--green); margin: 0 0 16px;" id="hora-actual-texto"></p>
+            <div style="display:flex; gap:8px; justify-content:center;">
+                <button type="button" id="btn-cancelar" class="btn btn-pequeno">Cancelar</button>
+                <button type="button" id="btn-confirmar" class="btn btn-primario">Si, guardar</button>
+            </div>
+        </div>
+
+        <div id="estado-exito" style="display:none;">
+            <p style="font-size:36px; margin:0;">&#9989;</p>
+            <p style="color: var(--green); margin-bottom:0;">Guardado correctamente</p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Te has olvidado de registrarlo?</h2>
+        <form id="formulario-manual" class="form-linea">
+            <div class="campo">
+                <label for="fecha_hora">Fecha y hora</label>
+                <input type="datetime-local" id="fecha_hora" name="fecha_hora" required>
+            </div>
+            <button type="submit" class="btn-submit">Registrar</button>
+        </form>
+    </div>
+
+    <h2 style="font-family: var(--font-mono); font-size:14px; letter-spacing:1px; text-transform:uppercase; margin-top:36px;">
+        Historial
+    </h2>
+
+    {% if registros %}
+        <div class="tabla-wrap">
+            <table>
+                <thead>
+                    <tr><th>Fecha</th><th>Hora</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for r in registros %}
+                        <tr>
+                            <td>{{ r['fecha_hora'][:10] }}</td>
+                            <td>{{ r['fecha_hora'][11:16] }}</td>
+                            <td style="text-align:right;">
+                                <form method="POST" action="{{ url_for('caca_eliminar', registro_id=r['id']) }}"
+                                      onsubmit="return confirm('Eliminar este registro?');">
+                                    <button type="submit" class="btn btn-peligro">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="vacio">Todavia no has registrado nada.</p>
+    {% endif %}
+
+    <script>
+        // Igual que en el proyecto original (poop.js): el registro se
+        // manda con fetch() en vez de con un <form> clasico, para poder
+        // mostrar el paso de "confirmar" y el de "guardado" sin recargar
+        // la pagina hasta el final. La hora se calcula en el propio
+        // navegador y se manda ya lista como texto.
+
+        const URL_CACA = "{{ url_for('caca') }}";
+
+        const estadoInicial = document.getElementById('estado-inicial');
+        const estadoConfirmar = document.getElementById('estado-confirmar');
+        const estadoExito = document.getElementById('estado-exito');
+        const horaActualTexto = document.getElementById('hora-actual-texto');
+
+        const btnRegistrarAhora = document.getElementById('btn-registrar-ahora');
+        const btnCancelar = document.getElementById('btn-cancelar');
+        const btnConfirmar = document.getElementById('btn-confirmar');
+        const formularioManual = document.getElementById('formulario-manual');
+        const inputFecha = document.getElementById('fecha_hora');
+
+        // Convierte una fecha en el texto 'AAAA-MM-DDTHH:MM' que
+        // representa su hora LOCAL (restamos el desfase de zona horaria
+        // antes de usar toISOString, que si no siempre devuelve UTC).
+        function horaLocalComoTexto(fecha) {
+            const copia = new Date(fecha);
+            copia.setMinutes(copia.getMinutes() - copia.getTimezoneOffset());
+            return copia.toISOString().slice(0, 16);
+        }
+
+        function guardarRegistro(fechaTexto, alTerminar) {
+            const datos = new FormData();
+            datos.append('fecha_hora', fechaTexto);
+
+            fetch(URL_CACA, { method: 'POST', body: datos })
+                .then(respuesta => {
+                    if (respuesta.ok) {
+                        alTerminar(true);
+                        window.location.href = URL_CACA;
+                    } else {
+                        alTerminar(false);
+                        alert('Error: no se ha podido guardar el registro.');
+                    }
+                })
+                .catch(() => {
+                    alTerminar(false);
+                    alert('Error: ha habido un problema con la conexion.');
+                });
+        }
+
+        btnRegistrarAhora.addEventListener('click', () => {
+            const ahora = new Date();
+            horaActualTexto.textContent = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            estadoInicial.style.display = 'none';
+            estadoConfirmar.style.display = 'block';
+        });
+
+        btnCancelar.addEventListener('click', () => {
+            estadoConfirmar.style.display = 'none';
+            estadoInicial.style.display = 'block';
+        });
+
+        btnConfirmar.addEventListener('click', () => {
+            estadoConfirmar.style.display = 'none';
+            estadoExito.style.display = 'block';
+
+            guardarRegistro(horaLocalComoTexto(new Date()), (exito) => {
+                if (!exito) {
+                    estadoExito.style.display = 'none';
+                    estadoInicial.style.display = 'block';
+                }
+            });
+        });
+
+        // El formulario manual empieza relleno con la hora actual.
+        inputFecha.value = horaLocalComoTexto(new Date());
+
+        formularioManual.addEventListener('submit', (evento) => {
+            evento.preventDefault();
+            const boton = formularioManual.querySelector('.btn-submit');
+            const textoOriginal = boton.textContent;
+            boton.disabled = true;
+
+            guardarRegistro(inputFecha.value, (exito) => {
+                if (exito) {
+                    boton.textContent = 'Guardado!';
+                } else {
+                    boton.textContent = textoOriginal;
+                    boton.disabled = false;
+                }
+            });
+        });
+    </script>
+{% endblock %}

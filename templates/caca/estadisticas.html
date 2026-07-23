@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+{% block titulo %}Estadisticas de Caca{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('caca') }}" class="volver">&larr; Volver a registro</a>
+
+    <span class="eyebrow">Estadisticas</span>
+    <h1 style="text-align:center;">{{ 'Tus estadisticas' if es_propio else nombre_objetivo + ' (publico)' }}</h1>
+    <p class="subtitle">Totales, medias y el grafico de siempre</p>
+
+    {% if usuarios_visibles|length > 1 %}
+        <div class="card" style="margin-bottom:20px;">
+            <div class="campo" style="margin:0;">
+                <label for="selector-usuario">Ver estadisticas de</label>
+                <select id="selector-usuario" onchange="location.href='{{ url_for('caca_estadisticas') }}?usuario_id=' + this.value;">
+                    {% for u in usuarios_visibles %}
+                        <option value="{{ u['id'] }}" {{ 'selected' if u['id'] == usuario_objetivo_id else '' }}>{{ u['username'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="kpis">
+        <div class="kpi-card">
+            <span class="etiqueta">Ultima entrada</span>
+            <div class="cifra" id="stat-ultima" style="font-size:18px;">-</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Total</span>
+            <div class="cifra" id="stat-total">-</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Media/dia (30d)</span>
+            <div class="cifra" id="stat-avg30">-</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Media/dia (365d)</span>
+            <div class="cifra" id="stat-avg365">-</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Media/dia (siempre)</span>
+            <div class="cifra" id="stat-avgever">-</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Hora pico (30d)</span>
+            <div class="cifra" id="stat-peakhour">-</div>
+        </div>
+    </div>
+
+    <div class="bloque-analisis">
+        <div class="titulo-bloque">Grafico</div>
+
+        <div class="campo" style="margin-bottom:16px;">
+            <label for="selector-vista">Vista</label>
+            <select id="selector-vista">
+                <option value="last30">Ultimos 30 dias</option>
+                <option value="last365">Ultimo anio</option>
+                <option value="monthly">Media por meses (historico)</option>
+                <option value="yearly">Media por anios (historico)</option>
+                <option value="hours">Por hora del dia (historico)</option>
+            </select>
+        </div>
+
+        <div id="fila-navegacion" style="display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:14px;">
+            <button type="button" id="btn-anterior" class="btn btn-pequeno">&larr;</button>
+            <span id="etiqueta-periodo" class="tag" style="font-size:13px; min-width:140px; text-align:center;">-</span>
+            <button type="button" id="btn-siguiente" class="btn btn-pequeno">&rarr;</button>
+        </div>
+
+        <p class="tag" style="text-align:center; margin-top:-6px;">
+            <span style="color: var(--green);">&#9632;</span> Tendencia (media movil)
+            &nbsp;&nbsp;
+            <span style="color: var(--text-muted);">&#9632;</span> Datos reales
+        </p>
+
+        <div class="grafico-wrap">
+            <canvas id="grafico-caca"></canvas>
+        </div>
+    </div>
+
+    {% if es_propio %}
+        <div class="card" style="margin-top:20px;">
+            <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Privacidad</h2>
+            <p style="color: var(--text-muted); font-size:13px; margin-top:-6px;">
+                Si tu perfil es publico, otros usuarios de la app pueden ver estas estadisticas
+                (nunca tu historial detallado, solo los totales y el grafico).
+            </p>
+            <form method="POST" action="{{ url_for('caca_privacidad') }}" style="display:flex; gap:8px;">
+                <button type="submit" name="privacidad" value="privado" class="btn {{ 'btn-primario' if not perfil_publico else '' }}">Privado</button>
+                <button type="submit" name="privacidad" value="publico" class="btn {{ 'btn-primario' if perfil_publico else '' }}">Publico</button>
+            </form>
+        </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script>
+        // Datos en bruto que manda Flask: la lista de fechas (una por cada
+        // registro) del usuario que se esta viendo.
+        const fechasISO = {{ fechas_json | tojson }};
+        const fechas = fechasISO.map(f => new Date(f));
+
+        /* =========================================================
+           LOGICA DE ESTADISTICAS Y GRAFICOS
+           Puerto fiel de home.js del proyecto original (misma formula de
+           media movil, mismos saltos de navegacion, mismas vistas sin
+           paginar para meses/anios). Probada aparte con Node antes de
+           ponerla aqui: ver logica_caca.js y test_logica_caca.js.
+           ========================================================= */
+
+// Puerto fiel de la logica real de home.js: media movil por vista,
+// navegacion con ventana movil en offset=0 pero saltos a mes/anio
+// natural en offset>=1 para last30/last365, y vistas mensual/anual
+// mostrando todo el historico sin paginar. Probado aqui con Node antes
+// de incrustarlo en la plantilla.
+
+const NOMBRES_MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const NOMBRES_MESES_LARGOS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+// Ventana de suavizado (media movil) de cada vista. 1 = sin suavizado.
+const VENTANAS_SUAVIZADO = { last30: 3, last365: 7, monthly: 1, yearly: 1, hours: 2 };
+
+function inicioDeDia(fecha) {
+    return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+}
+
+function sumarDias(fecha, dias) {
+    const copia = new Date(fecha);
+    copia.setDate(copia.getDate() + dias);
+    return copia;
+}
+
+function claveFecha(fecha) {
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, '0');
+    const d = String(fecha.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function formatoFechaCorta(fecha) {
+    return String(fecha.getDate()).padStart(2, '0') + '/' + String(fecha.getMonth() + 1).padStart(2, '0');
+}
+
+function formatoUltimaEntrada(fecha, ahora) {
+    const mismoDia = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const ayer = sumarDias(ahora, -1);
+    const horaTexto = String(fecha.getHours()).padStart(2, '0') + ':' + String(fecha.getMinutes()).padStart(2, '0');
+
+    if (mismoDia(fecha, ahora)) return 'Hoy: ' + horaTexto;
+    if (mismoDia(fecha, ayer)) return 'Ayer: ' + horaTexto;
+
+    const unDia = 24 * 60 * 60 * 1000;
+    const diasAtras = Math.round((inicioDeDia(ahora) - inicioDeDia(fecha)) / unDia);
+    return `Hace ${diasAtras} dias a las ${horaTexto}`;
+}
+
+function esBisiesto(anio) {
+    return (anio % 4 === 0 && anio % 100 !== 0) || anio % 400 === 0;
+}
+
+function diaDelAnio(fecha) {
+    const inicio = new Date(fecha.getFullYear(), 0, 1);
+    const diffMs = inicioDeDia(fecha) - inicio;
+    return Math.floor(diffMs / (24 * 60 * 60 * 1000)) + 1;
+}
+
+// Media movil: cada punto es la media de si mismo y los (ventana-1)
+// puntos anteriores. Con ventana<=1 no hace nada (devuelve los mismos datos).
+function calcularMediaMovil(datos, ventana) {
+    if (ventana <= 1) return datos.slice();
+    const resultado = [];
+    for (let i = 0; i < datos.length; i++) {
+        const inicio = Math.max(0, i - ventana + 1);
+        const subset = datos.slice(inicio, i + 1);
+        const suma = subset.reduce((a, b) => a + b, 0);
+        resultado.push(suma / subset.length);
+    }
+    return resultado;
+}
+
+// ============================================================
+// ESTADISTICAS (tarjetas)
+// ============================================================
+
+function calcularEstadisticas(fechasISO, ahora) {
+    const fechas = fechasISO.map(f => new Date(f)).sort((a, b) => a - b);
+    const total = fechas.length;
+
+    if (total === 0) {
+        return { total: 0, ultimaEntradaTexto: '-', avg30: 0, avg365: 0, avgEver: 0, peakHour30: '-' };
+    }
+
+    const unDia = 24 * 60 * 60 * 1000;
+    const hace30 = new Date(ahora.getTime() - 30 * unDia);
+    const hace365 = new Date(ahora.getTime() - 365 * unDia);
+
+    const avg30 = fechas.filter(f => f >= hace30).length / 30;
+    const avg365 = fechas.filter(f => f >= hace365).length / 365;
+
+    // Igual que el original: diferencia en milisegundos entre ahora y el
+    // primer registro, redondeada hacia abajo a dias completos (minimo 1).
+    const primeraFecha = fechas[0];
+    const diasActivos = Math.max(1, Math.floor((ahora - primeraFecha) / unDia));
+    const avgEver = total / diasActivos;
+
+    // Hora pico, solo con los registros de los ultimos 30 dias.
+    const contadorHoras = new Array(24).fill(0);
+    fechas.filter(f => f >= hace30).forEach(f => { contadorHoras[f.getHours()]++; });
+    let peakHour30 = '-';
+    const maxCuenta = Math.max(...contadorHoras);
+    if (maxCuenta > 0) {
+        peakHour30 = String(contadorHoras.indexOf(maxCuenta)).padStart(2, '0') + ':00';
+    }
+
+    const ultima = fechas[fechas.length - 1];
+
+    return {
+        total,
+        ultimaEntradaTexto: formatoUltimaEntrada(ultima, ahora),
+        avg30: Math.round(avg30 * 100) / 100,
+        avg365: Math.round(avg365 * 100) / 100,
+        avgEver: Math.round(avgEver * 100) / 100,
+        peakHour30,
+    };
+}
+
+// ============================================================
+// DATOS DEL GRAFICO POR VISTA
+// ============================================================
+
+// Cuenta cuantos registros caen en cada dia entre 'inicio' y 'fin' (ambos
+// incluidos). Devuelve las etiquetas (dd/mm) y los valores en el mismo orden.
+function contarPorDia(fechas, inicio, fin) {
+    const etiquetas = [];
+    const contador = {};
+    let cursor = new Date(inicio);
+    while (cursor <= fin) {
+        const clave = claveFecha(cursor);
+        etiquetas.push(formatoFechaCorta(cursor));
+        contador[clave] = 0;
+        cursor = sumarDias(cursor, 1);
+    }
+    fechas.forEach(f => {
+        const clave = claveFecha(f);
+        if (clave in contador) contador[clave]++;
+    });
+    return { etiquetas, valores: Object.values(contador) };
+}
+
+// offset=0 -> ventana movil de 30 dias terminando hoy.
+// offset>=1 -> mes natural completo (mes actual - offset meses).
+function datosLast30(fechas, offset, hoy) {
+    let inicio, fin, etiquetaPeriodo;
+
+    if (offset === 0) {
+        fin = inicioDeDia(hoy);
+        inicio = sumarDias(fin, -29);
+        etiquetaPeriodo = `${formatoFechaCorta(inicio)} - ${formatoFechaCorta(fin)}`;
+    } else {
+        const objetivo = new Date(hoy.getFullYear(), hoy.getMonth() - offset, 1);
+        inicio = new Date(objetivo.getFullYear(), objetivo.getMonth(), 1);
+        fin = new Date(objetivo.getFullYear(), objetivo.getMonth() + 1, 0);
+        etiquetaPeriodo = NOMBRES_MESES_LARGOS[inicio.getMonth()] + ' ' + inicio.getFullYear();
+    }
+
+    const { etiquetas, valores } = contarPorDia(fechas, inicio, fin);
+    const suavizado = calcularMediaMovil(valores, VENTANAS_SUAVIZADO.last30);
+
+    return { etiquetas, valores, suavizado, etiquetaPeriodo, navegable: true, haySiguiente: offset > 0 };
+}
+
+// offset=0 -> ventana movil de 365 dias terminando hoy.
+// offset>=1 -> anio natural completo (anio actual - offset).
+function datosLast365(fechas, offset, hoy) {
+    let inicio, fin, etiquetaPeriodo;
+
+    if (offset === 0) {
+        fin = inicioDeDia(hoy);
+        inicio = sumarDias(fin, -364);
+        etiquetaPeriodo = 'Ultimos 365 dias';
+    } else {
+        const anioObjetivo = hoy.getFullYear() - offset;
+        inicio = new Date(anioObjetivo, 0, 1);
+        fin = new Date(anioObjetivo, 11, 31);
+        etiquetaPeriodo = 'Anio ' + anioObjetivo;
+    }
+
+    const { etiquetas, valores } = contarPorDia(fechas, inicio, fin);
+    const suavizado = calcularMediaMovil(valores, VENTANAS_SUAVIZADO.last365);
+
+    return { etiquetas, valores, suavizado, etiquetaPeriodo, navegable: true, haySiguiente: offset > 0 };
+}
+
+// Sin paginar: todos los meses en los que hay algun registro, de toda
+// la historia. Cada valor es la media de registros/dia de ese mes.
+function datosMensual(fechas, hoy) {
+    const contador = {};
+    fechas.forEach(f => {
+        const clave = f.getFullYear() + '-' + String(f.getMonth() + 1).padStart(2, '0');
+        contador[clave] = (contador[clave] || 0) + 1;
+    });
+
+    const claves = Object.keys(contador).sort();
+    const etiquetas = claves.map(c => {
+        const [y, m] = c.split('-').map(Number);
+        return NOMBRES_MESES_CORTOS[m - 1] + ' ' + y;
+    });
+    const valores = claves.map(c => {
+        const [y, m] = c.split('-').map(Number);
+        const diasEnMes = new Date(y, m, 0).getDate();
+        const esMesActual = (y === hoy.getFullYear() && m === hoy.getMonth() + 1);
+        const diasActivos = esMesActual ? hoy.getDate() : diasEnMes;
+        return Math.round((contador[c] / diasActivos) * 100) / 100;
+    });
+
+    const suavizado = calcularMediaMovil(valores, VENTANAS_SUAVIZADO.monthly);
+    return { etiquetas, valores, suavizado, etiquetaPeriodo: 'Historico (todos los meses)', navegable: false, haySiguiente: false };
+}
+
+// Sin paginar: todos los anios en los que hay algun registro.
+function datosAnual(fechas, hoy) {
+    const contador = {};
+    fechas.forEach(f => {
+        const anio = f.getFullYear();
+        contador[anio] = (contador[anio] || 0) + 1;
+    });
+
+    const claves = Object.keys(contador).map(Number).sort((a, b) => a - b);
+    const etiquetas = claves.map(String);
+    const valores = claves.map(anio => {
+        const esAnioActual = anio === hoy.getFullYear();
+        const diasActivos = esAnioActual ? diaDelAnio(hoy) : (esBisiesto(anio) ? 366 : 365);
+        return Math.round((contador[anio] / diasActivos) * 100) / 100;
+    });
+
+    const suavizado = calcularMediaMovil(valores, VENTANAS_SUAVIZADO.yearly);
+    return { etiquetas, valores, suavizado, etiquetaPeriodo: 'Historico (todos los anios)', navegable: false, haySiguiente: false };
+}
+
+// Sin paginar: distribucion por franjas de 15 minutos, con todo el historico.
+function datosHoras(fechas) {
+    const bins = new Array(96).fill(0);
+    fechas.forEach(f => {
+        const slot = Math.floor((f.getHours() * 60 + f.getMinutes()) / 15);
+        bins[slot]++;
+    });
+
+    const etiquetas = [];
+    for (let i = 0; i < 96; i++) {
+        const h = Math.floor(i / 4);
+        const m = (i % 4) * 15;
+        etiquetas.push(String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'));
+    }
+
+    const suavizado = calcularMediaMovil(bins, VENTANAS_SUAVIZADO.hours);
+    return { etiquetas, valores: bins, suavizado, etiquetaPeriodo: 'Todo el historial', navegable: false, haySiguiente: false };
+}
+
+        /* =========================================================
+           CONECTAR LA LOGICA CON LA PAGINA
+           ========================================================= */
+
+        const ahora = new Date();
+        const est = calcularEstadisticas(fechasISO, ahora);
+        document.getElementById('stat-ultima').textContent = est.ultimaEntradaTexto;
+        document.getElementById('stat-total').textContent = est.total;
+        document.getElementById('stat-avg30').textContent = est.avg30;
+        document.getElementById('stat-avg365').textContent = est.avg365;
+        document.getElementById('stat-avgever').textContent = est.avgEver;
+        document.getElementById('stat-peakhour').textContent = est.peakHour30;
+
+        let vistaActual = 'last30';
+        let offsetActual = 0;
+        let grafico = null;
+
+        // Leemos los colores directamente de las variables CSS del tema,
+        // para que el grafico siempre encaje con el resto de la web.
+        const estilos = getComputedStyle(document.documentElement);
+        const colorVerde = estilos.getPropertyValue('--green').trim();
+        const colorMuted = estilos.getPropertyValue('--text-muted').trim();
+        const colorBorder = estilos.getPropertyValue('--border').trim();
+
+        Chart.defaults.color = colorMuted;
+        Chart.defaults.borderColor = colorBorder;
+        Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+
+        function datosParaVista(vista, offset) {
+            if (vista === 'last30') return datosLast30(fechas, offset, ahora);
+            if (vista === 'last365') return datosLast365(fechas, offset, ahora);
+            if (vista === 'monthly') return datosMensual(fechas, ahora);
+            if (vista === 'yearly') return datosAnual(fechas, ahora);
+            return datosHoras(fechas);
+        }
+
+        function dibujarGrafico() {
+            const datos = datosParaVista(vistaActual, offsetActual);
+
+            document.getElementById('etiqueta-periodo').textContent = datos.etiquetaPeriodo;
+
+            const filaNav = document.getElementById('fila-navegacion');
+            filaNav.style.opacity = datos.navegable ? '1' : '0.3';
+            filaNav.style.pointerEvents = datos.navegable ? 'auto' : 'none';
+            // Igual que el original: "siguiente" se desactiva al llegar al
+            // periodo mas reciente, pero "anterior" no tiene limite (si no
+            // hay datos mas antiguos, el grafico simplemente sale vacio).
+            document.getElementById('btn-siguiente').disabled = !datos.haySiguiente;
+
+            const esAnual = (vistaActual === 'yearly');
+            const tension = esAnual ? 0 : 0.4;
+            const radioPunto = esAnual ? 4 : 0;
+
+            if (grafico) grafico.destroy();
+            grafico = new Chart(document.getElementById('grafico-caca'), {
+                type: 'line',
+                data: {
+                    labels: datos.etiquetas,
+                    datasets: [
+                        {
+                            label: 'Tendencia',
+                            data: datos.suavizado,
+                            fill: true,
+                            tension: tension,
+                            borderColor: colorVerde,
+                            backgroundColor: 'rgba(124, 179, 66, 0.18)',
+                            borderWidth: 2,
+                            pointRadius: radioPunto,
+                            pointHoverRadius: 6,
+                            order: 1,
+                        },
+                        {
+                            label: 'Datos reales',
+                            data: datos.valores,
+                            borderColor: colorMuted,
+                            borderWidth: 1.5,
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            tension: 0,
+                            order: 2,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 400 },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: colorBorder }, ticks: { color: colorMuted } },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: colorMuted,
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: (vistaActual === 'hours') ? 24 : 10,
+                            },
+                        },
+                    },
+                },
+            });
+        }
+
+        document.getElementById('selector-vista').addEventListener('change', (evento) => {
+            vistaActual = evento.target.value;
+            offsetActual = 0;
+            dibujarGrafico();
+        });
+        document.getElementById('btn-anterior').addEventListener('click', () => {
+            offsetActual += 1;
+            dibujarGrafico();
+        });
+        document.getElementById('btn-siguiente').addEventListener('click', () => {
+            if (offsetActual > 0) {
+                offsetActual -= 1;
+                dibujarGrafico();
+            }
+        });
+
+        dibujarGrafico();
+    </script>
+{% endblock %}

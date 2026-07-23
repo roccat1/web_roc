@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block titulo %}Caducidades{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Recordatorios</span>
+    <h1 style="text-align:center;">Fechas de caducidad</h1>
+    <p class="subtitle">Documentacion, mantenimiento del coche, seguros... lo que quieras controlar</p>
+
+    <div class="header-finanzas" style="margin-top:20px;">
+        <div class="acciones">
+            <a href="{{ url_for('caducidades_nueva') }}" class="btn btn-primario">+ Nuevo registro</a>
+        </div>
+    </div>
+
+    <div class="kpis">
+        <div class="kpi-card">
+            <span class="etiqueta">Caducadas</span>
+            <div class="cifra caducado">{{ resumen.caducado }}</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Proximas</span>
+            <div class="cifra proximo">{{ resumen.proximo }}</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Vigentes</span>
+            <div class="cifra vigente">{{ resumen.vigente }}</div>
+        </div>
+    </div>
+
+    {% if total_items > 0 %}
+        <form method="GET" class="form-linea filtro-analisis">
+            <div class="campo">
+                <label for="estado">Estado</label>
+                <select id="estado" name="estado" onchange="this.form.submit()">
+                    <option value="">Todos</option>
+                    <option value="caducado" {{ 'selected' if estado_filtro == 'caducado' else '' }}>Caducadas</option>
+                    <option value="proximo" {{ 'selected' if estado_filtro == 'proximo' else '' }}>Proximas</option>
+                    <option value="vigente" {{ 'selected' if estado_filtro == 'vigente' else '' }}>Vigentes</option>
+                </select>
+            </div>
+            {% if categorias_usadas %}
+                <div class="campo">
+                    <label for="categoria">Categoria</label>
+                    <select id="categoria" name="categoria" onchange="this.form.submit()">
+                        <option value="">Todas</option>
+                        {% for cat in categorias_usadas %}
+                            <option value="{{ cat }}" {{ 'selected' if categoria_filtro == cat else '' }}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            <noscript><button type="submit" class="btn btn-pequeno">Filtrar</button></noscript>
+        </form>
+    {% endif %}
+
+    {% if items %}
+        <div class="tabla-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Nombre</th>
+                        <th>Categoria</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td><span class="led {{ item.led }}"></span></td>
+                            <td>
+                                {{ item.nombre }}
+                                {% if item.dias_revalidacion %}<br><span class="tag">Revalida cada {{ item.dias_revalidacion }} dias</span>{% endif %}
+                                {% if item.notas %}<br><span class="tag">{{ item.notas }}</span>{% endif %}
+                            </td>
+                            <td><span class="badge">{{ item.categoria }}</span></td>
+                            <td>{{ item.fecha_caducidad }}</td>
+                            <td><span class="dias-restantes {{ item.estado }}">{{ item.texto_estado }}</span></td>
+                            <td style="text-align:right; white-space:nowrap;">
+                                {% if item.dias_revalidacion %}
+                                    <form method="POST" action="{{ url_for('caducidades_revalidar', caducidad_id=item.id) }}" style="display:inline;">
+                                        <button type="submit" class="btn btn-exito">Revalidar</button>
+                                    </form>
+                                {% endif %}
+                                <a href="{{ url_for('caducidades_editar', caducidad_id=item.id) }}" class="btn btn-pequeno">Editar</a>
+                                <form method="POST" action="{{ url_for('caducidades_eliminar', caducidad_id=item.id) }}"
+                                      style="display:inline;" onsubmit="return confirm('¿Eliminar {{ item.nombre }}?');">
+                                    <button type="submit" class="btn btn-peligro">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% elif total_items > 0 %}
+        <p class="vacio">Ningun registro coincide con el filtro elegido.</p>
+    {% else %}
+        <p class="vacio">
+            Aun no has anadido ninguna fecha de caducidad.
+            <a href="{{ url_for('caducidades_nueva') }}" style="color: var(--green);">Anade la primera aqui</a>.
+        </p>
+    {% endif %}
+{% endblock %}

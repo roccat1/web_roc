@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titulo %}Editar subcategoria{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('finanzas_categorias') }}" class="volver">&larr; Volver a categorias</a>
+
+    <span class="eyebrow">Editar</span>
+    <h1>{{ subcategoria['nombre'] }}</h1>
+
+    <div class="card">
+        <form method="POST">
+            <div class="campo">
+                <label for="nombre">Nombre</label>
+                <input type="text" id="nombre" name="nombre" value="{{ subcategoria['nombre'] }}" required>
+            </div>
+            <button type="submit">Guardar cambios</button>
+        </form>
+    </div>
+{% endblock %}

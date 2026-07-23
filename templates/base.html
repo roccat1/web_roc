@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}Mi App Flask{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="brand-row">
+            <span class="status-led"></span>
+            <span class="brand-label">Raspberry Login</span>
+        </div>
+        <nav>
+            <a href="{{ url_for('index') }}">Inicio</a>
+            {% if session.get('usuario_id') %}
+                <a href="{{ url_for('finanzas') }}">Finanzas</a>
+                <a href="{{ url_for('caducidades') }}">Caducidades</a>
+                <a href="{{ url_for('caca') }}">Caca</a>
+                <a href="{{ url_for('dashboard') }}">Mi cuenta</a>
+                <a href="{{ url_for('logout') }}">Cerrar sesion</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Iniciar sesion</a>
+                <a href="{{ url_for('registro') }}">Registrarse</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="{% block main_class %}{% endblock %}">
+        {% with mensajes = get_flashed_messages() %}
+            {% if mensajes %}
+                <ul class="flashes">
+                    {% for mensaje in mensajes %}
+                        <li>{{ mensaje }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        {% block contenido %}{% endblock %}
+    </main>
+</body>
+</html>

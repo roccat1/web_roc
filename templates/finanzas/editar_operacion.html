@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block titulo %}Editar operacion{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('finanzas_operaciones') }}" class="volver">&larr; Volver al historial</a>
+
+    <span class="eyebrow">Editar</span>
+    <h1>Operacion</h1>
+    <p class="subtitle">Cambia lo que haga falta; el saldo de las cuentas se ajusta solo</p>
+
+    <div class="card">
+        <form method="POST" id="formulario-operacion">
+            <input type="hidden" name="origen" value="{{ origen }}">
+            <div class="campo">
+                <label for="tipo">Tipo de operacion</label>
+                <select id="tipo" name="tipo" required>
+                    <option value="gasto" {{ 'selected' if operacion['tipo'] == 'gasto' else '' }}>Gasto</option>
+                    <option value="ingreso" {{ 'selected' if operacion['tipo'] == 'ingreso' else '' }}>Ingreso</option>
+                    <option value="transferencia" {{ 'selected' if operacion['tipo'] == 'transferencia' else '' }}>Transferencia entre cuentas</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label id="etiqueta-cuenta" for="cuenta_id">Cuenta</label>
+                <select id="cuenta_id" name="cuenta_id" required>
+                    {% for cuenta in cuentas %}
+                        <option value="{{ cuenta['id'] }}" {{ 'selected' if cuenta['id'] == operacion['cuenta_id'] else '' }}>{{ cuenta['nombre'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="campo" id="campo-destino" style="display:none;">
+                <label for="cuenta_destino_id">Cuenta destino</label>
+                <select id="cuenta_destino_id" name="cuenta_destino_id">
+                    {% for cuenta in cuentas %}
+                        <option value="{{ cuenta['id'] }}" {{ 'selected' if cuenta['id'] == operacion['cuenta_destino_id'] else '' }}>{{ cuenta['nombre'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="campo" id="campo-categoria">
+                <label for="categoria_id">Categoria</label>
+                <select id="categoria_id" name="categoria_id"></select>
+            </div>
+
+            <div class="campo" id="campo-subcategoria">
+                <label for="subcategoria_id">Subcategoria</label>
+                <select id="subcategoria_id" name="subcategoria_id"></select>
+            </div>
+
+            <div class="campo">
+                <label for="monto">Importe (€)</label>
+                <input type="number" id="monto" name="monto" step="0.01" min="0.01" value="{{ operacion['monto'] }}" required>
+            </div>
+
+            <div class="campo">
+                <label for="fecha">Fecha</label>
+                <input type="date" id="fecha" name="fecha" value="{{ operacion['fecha'] }}" required>
+            </div>
+
+            <div class="campo">
+                <label for="descripcion">Descripcion (opcional)</label>
+                <input type="text" id="descripcion" name="descripcion" value="{{ operacion['descripcion'] or '' }}">
+            </div>
+
+            <button type="submit">Guardar cambios</button>
+        </form>
+    </div>
+
+    <script>
+        // Categorias del usuario (con sus subcategorias) y los valores que
+        // tenia esta operacion guardados, para dejarlos ya seleccionados.
+        const categorias = {{ categorias | tojson }};
+        const categoriaActual = {{ operacion['categoria_id'] | tojson }};
+        const subcategoriaActual = {{ operacion['subcategoria_id'] | tojson }};
+
+        const selectTipo = document.getElementById('tipo');
+        const etiquetaCuenta = document.getElementById('etiqueta-cuenta');
+        const campoDestino = document.getElementById('campo-destino');
+        const selectDestino = document.getElementById('cuenta_destino_id');
+        const campoCategoria = document.getElementById('campo-categoria');
+        const selectCategoria = document.getElementById('categoria_id');
+        const campoSubcategoria = document.getElementById('campo-subcategoria');
+        const selectSubcategoria = document.getElementById('subcategoria_id');
+
+        function actualizarCategorias(mantenerSeleccion) {
+            const tipo = selectTipo.value;
+            selectCategoria.innerHTML = '';
+
+            if (tipo === 'transferencia') {
+                campoCategoria.style.display = 'none';
+                campoSubcategoria.style.display = 'none';
+                campoDestino.style.display = 'block';
+                etiquetaCuenta.textContent = 'Cuenta origen';
+                selectCategoria.required = false;
+                selectSubcategoria.required = false;
+                selectDestino.required = true;
+            } else {
+                campoCategoria.style.display = 'block';
+                campoSubcategoria.style.display = 'block';
+                campoDestino.style.display = 'none';
+                etiquetaCuenta.textContent = 'Cuenta';
+                selectCategoria.required = true;
+                selectSubcategoria.required = true;
+                selectDestino.required = false;
+
+                categorias
+                    .filter(cat => cat.tipo === tipo)
+                    .forEach(cat => {
+                        const opcion = document.createElement('option');
+                        opcion.value = cat.id;
+                        opcion.textContent = cat.nombre;
+                        selectCategoria.appendChild(opcion);
+                    });
+
+                if (mantenerSeleccion && categoriaActual) {
+                    selectCategoria.value = categoriaActual;
+                }
+                actualizarSubcategorias(mantenerSeleccion);
+            }
+        }
+
+        function actualizarSubcategorias(mantenerSeleccion) {
+            selectSubcategoria.innerHTML = '';
+            const categoriaId = parseInt(selectCategoria.value, 10);
+            const categoria = categorias.find(cat => cat.id === categoriaId);
+
+            if (categoria) {
+                categoria.subcategorias.forEach(sub => {
+                    const opcion = document.createElement('option');
+                    opcion.value = sub.id;
+                    opcion.textContent = sub.nombre;
+                    selectSubcategoria.appendChild(opcion);
+                });
+            }
+
+            if (mantenerSeleccion && subcategoriaActual) {
+                selectSubcategoria.value = subcategoriaActual;
+            }
+        }
+
+        selectTipo.addEventListener('change', () => actualizarCategorias(false));
+        selectCategoria.addEventListener('change', () => actualizarSubcategorias(false));
+
+        // Estado inicial al cargar la pagina: dejamos seleccionados la
+        // categoria y la subcategoria que ya tenia guardados la operacion.
+        actualizarCategorias(true);
+    </script>
+{% endblock %}

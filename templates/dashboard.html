@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block titulo %}Mi cuenta{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Panel general</span>
+    <h1 style="text-align:center;">Hola, {{ username }}</h1>
+
+    <div class="grid-cuentas" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top:24px;">
+        <div class="cuenta-card">
+            <div class="nombre-cuenta">
+                <span class="led {{ 'verde' if saldo_total >= 0 else 'rojo' }}"></span>
+                Finanzas
+            </div>
+            <div class="saldo">{{ saldo_total | euros }}</div>
+            <p class="tag" style="margin: 6px 0 14px;">
+                {{ num_cuentas }} cuenta{{ 's' if num_cuentas != 1 else '' }}
+                {% if saldo_ahorros %} &middot; {{ saldo_ahorros | euros }} en ahorros{% endif %}
+            </p>
+            <a href="{{ url_for('finanzas') }}" class="btn btn-pequeno">Ir a finanzas &rarr;</a>
+        </div>
+
+        <div class="cuenta-card">
+            <div class="nombre-cuenta">
+                <span class="led {{ 'rojo' if resumen_caducidad.caducado > 0 else ('amarillo' if resumen_caducidad.proximo > 0 else 'verde') }}"></span>
+                Caducidades
+            </div>
+            <div class="saldo">{{ total_caducidades }} registro{{ 's' if total_caducidades != 1 else '' }}</div>
+            <p class="tag" style="margin: 6px 0 14px;">
+                {{ resumen_caducidad.caducado }} caducadas &middot; {{ resumen_caducidad.proximo }} proximas
+            </p>
+            <a href="{{ url_for('caducidades') }}" class="btn btn-pequeno">Ir a caducidades &rarr;</a>
+        </div>
+
+        <div class="cuenta-card">
+            <div class="nombre-cuenta">
+                <span class="led {{ 'verde' if telegram_vinculado else 'rojo' }}"></span>
+                Telegram
+            </div>
+            <div class="saldo" style="font-size:16px;">{{ 'Vinculado' if telegram_vinculado else 'Sin vincular' }}</div>
+            <p class="tag" style="margin: 6px 0 14px;">Consulta y registra datos desde el movil</p>
+            <a href="{{ url_for('telegram') }}" class="btn btn-pequeno">{{ 'Gestionar' if telegram_vinculado else 'Vincular' }} &rarr;</a>
+        </div>
+
+        <div class="cuenta-card">
+            <div class="nombre-cuenta">
+                <span class="led {{ 'verde' if total_caca > 0 else 'rojo' }}"></span>
+                Caca
+            </div>
+            <div class="saldo">{{ total_caca }} registro{{ 's' if total_caca != 1 else '' }}</div>
+            <p class="tag" style="margin: 6px 0 14px;">Seguimiento y estadisticas</p>
+            <a href="{{ url_for('caca') }}" class="btn btn-pequeno">Ir a caca &rarr;</a>
+        </div>
+    </div>
+
+    {% if proximas_caducidades %}
+        <h2 style="font-family: var(--font-mono); font-size:14px; letter-spacing:1px; text-transform:uppercase; margin-top:36px;">
+            Proximas fechas
+        </h2>
+        <div class="tabla-wrap">
+            <table>
+                <thead>
+                    <tr><th></th><th>Nombre</th><th>Fecha</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in proximas_caducidades %}
+                        <tr>
+                            <td><span class="led {{ item.led }}"></span></td>
+                            <td>{{ item.nombre }}</td>
+                            <td>{{ item.fecha_caducidad }}</td>
+                            <td><span class="dias-restantes {{ item.estado }}">{{ item.texto_estado }}</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    <p style="text-align:center; margin-top:32px;">
+        <a href="{{ url_for('logout') }}" style="color: var(--red-bright); text-decoration:none; font-family: var(--font-mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;">Cerrar sesion</a>
+    </p>
+{% endblock %}

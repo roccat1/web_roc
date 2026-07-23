@@ -1,0 +1,1014 @@
+/* ============================================================
+   Estilo "placa de circuitos" — inspirado en el propio hardware
+   de la Raspberry Pi: fondo oscuro tipo PCB, acentos en el rojo
+   y verde de la marca, tipografia monoespaciada para titulos
+   (como el texto serigrafiado de una placa) y una fuente sans
+   limpia para el texto normal.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+    --bg: #10151b;
+    --surface: #1b2129;
+    --border: #2a323c;
+    --red: #c71e4a;      /* rojo Raspberry Pi */
+    --red-bright: #e23361;
+    --green: #7cb342;    /* verde Raspberry Pi */
+    --amarillo: #e0a83f; /* LED ambar, para avisos y estados "proximo" */
+    --text: #edf0f3;
+    --text-muted: #8993a1;
+    --font-mono: 'Space Mono', 'Courier New', monospace;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    color: var(--text);
+    background-color: var(--bg);
+    /* patron de puntos sutil, como los orificios metalizados de una placa */
+    background-image: radial-gradient(var(--border) 1px, transparent 1px);
+    background-size: 24px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+}
+
+/* -------------------- Cabecera / navegacion -------------------- */
+
+header {
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 40px;
+}
+
+.brand-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 18px;
+}
+
+.status-led {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: parpadeo 2.4s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes parpadeo {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.brand-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+nav a {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+nav a:hover {
+    color: var(--text);
+    border-color: var(--red);
+}
+
+/* -------------------- Contenedor principal -------------------- */
+
+main {
+    width: 100%;
+    max-width: 420px;
+}
+
+/* Fila de "pines GPIO": el elemento distintivo de la pagina.
+   Alterna puntos rojos y verdes, como una hilera de pines. */
+.pin-row {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    margin: 0 0 28px;
+}
+
+.pin-row span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.pin-row span:nth-child(odd) {
+    background: var(--red);
+}
+
+.pin-row span:nth-child(even) {
+    background: var(--green);
+}
+
+h1 {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    letter-spacing: 0.5px;
+    margin: 0 0 8px;
+    text-align: center;
+}
+
+.eyebrow {
+    display: block;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--red-bright);
+    margin-bottom: 6px;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0 0 28px;
+}
+
+/* -------------------- Tarjeta -------------------- */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px;
+}
+
+/* -------------------- Formularios -------------------- */
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+input {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    padding: 8px 2px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+input:focus {
+    border-bottom-color: var(--red);
+}
+
+/* -------------------- Menus desplegables (select) --------------------
+   Un select necesita mostrar que es "clicable", asi que en vez del
+   estilo de linea inferior de los inputs, usamos una caja con borde
+   completo (como las tarjetas y botones del resto de la web) y una
+   flecha propia en vez del icono feo que pone el navegador por defecto. */
+
+select {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    color: var(--text);
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 11px 38px 11px 12px;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238993a1' d='M1 1l5 5 5-5' stroke='%238993a1' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 11px 7px;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+select:hover {
+    border-color: var(--red);
+}
+
+select:focus {
+    border-color: var(--red);
+    background-color: var(--surface);
+}
+
+/* El navegador es quien dibuja la lista desplegable en si, pero al
+   menos le pedimos que las opciones usen los mismos colores oscuros
+   en vez del blanco por defecto. */
+option {
+    background: var(--surface);
+    color: var(--text);
+    padding: 8px;
+}
+
+/* Oculta el marco de foco punteado que pone Firefox dentro del texto */
+select:-moz-focusring {
+    color: transparent;
+    text-shadow: 0 0 0 var(--text);
+}
+
+/* En formularios en linea, que el select tenga la misma altura que el boton de al lado */
+.form-linea select {
+    height: 41px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+button {
+    margin-top: 6px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: white;
+    background: var(--red);
+    border: none;
+    border-bottom: 3px solid #8f1436;
+    border-radius: 6px;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 0.08s ease, background 0.15s;
+}
+
+button:hover {
+    background: var(--red-bright);
+}
+
+button:active {
+    transform: translateY(2px);
+    border-bottom-width: 1px;
+}
+
+.ayuda {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 18px;
+}
+
+.ayuda a {
+    color: var(--green);
+    text-decoration: none;
+}
+
+.ayuda a:hover {
+    text-decoration: underline;
+}
+
+/* -------------------- Mensajes flash -------------------- */
+
+.flashes {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.flashes li {
+    font-size: 13px;
+    background: rgba(199, 30, 74, 0.12);
+    border: 1px solid var(--red);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 6px;
+}
+
+/* -------------------- Pagina "Mi cuenta" -------------------- */
+
+.perfil {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+}
+
+.avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--red), var(--green));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.perfil .usuario {
+    font-family: var(--font-mono);
+    font-size: 18px;
+}
+
+.perfil .desc {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 6px 0 22px;
+}
+
+/* ============================================================
+   FINANZAS
+   Misma identidad visual que el resto del proyecto: fondo PCB,
+   tipografia Space Mono para titulos/etiquetas, rojo/verde de
+   Raspberry Pi como acentos. No cambiar estos tokens.
+   ============================================================ */
+
+main.ancho {
+    max-width: 760px;
+}
+
+.header-finanzas {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.header-finanzas .acciones {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* -------------------- Botones secundarios -------------------- */
+
+.btn {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 9px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.btn:hover {
+    border-color: var(--red);
+    color: var(--red-bright);
+}
+
+.btn-primario {
+    background: var(--red);
+    border-color: var(--red);
+    color: white;
+}
+
+.btn-primario:hover {
+    background: var(--red-bright);
+    color: white;
+}
+
+.btn-peligro {
+    border-color: var(--red);
+    color: var(--red-bright);
+    background: transparent;
+    font-size: 11px;
+    padding: 5px 10px;
+}
+
+.btn-peligro:hover {
+    background: rgba(199, 30, 74, 0.12);
+}
+
+.btn-exito {
+    border-color: var(--green);
+    color: var(--green);
+    background: transparent;
+    font-size: 11px;
+    padding: 5px 10px;
+}
+
+.btn-exito:hover {
+    background: rgba(124, 179, 66, 0.12);
+}
+
+.btn-pequeno {
+    font-size: 11px;
+    padding: 5px 10px;
+}
+
+/* -------------------- Saldo total -------------------- */
+
+.saldo-total {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.saldo-total .cifra {
+    font-family: var(--font-mono);
+    font-size: 40px;
+    font-weight: 700;
+}
+
+.saldo-total .cifra.negativo {
+    color: var(--red-bright);
+}
+
+.saldo-total .cifra.positivo {
+    color: var(--green);
+}
+
+/* -------------------- Tarjetas de cuenta -------------------- */
+
+.grid-cuentas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.cuenta-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.cuenta-card .nombre-cuenta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.led.verde {
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+}
+
+.led.rojo {
+    background: var(--red-bright);
+    box-shadow: 0 0 6px var(--red-bright);
+}
+
+.cuenta-card .saldo {
+    font-family: var(--font-mono);
+    font-size: 20px;
+}
+
+/* -------------------- Tablas -------------------- */
+
+.tabla-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+thead th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 10px;
+}
+
+tbody td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.monto {
+    font-family: var(--font-mono);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.monto.gasto { color: var(--red-bright); }
+.monto.ingreso { color: var(--green); }
+.monto.transferencia { color: var(--text-muted); }
+
+/* -------------------- Etiquetas / badges -------------------- */
+
+.badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+.badge-gasto { border-color: var(--red); color: var(--red-bright); }
+.badge-ingreso { border-color: var(--green); color: var(--green); }
+.badge-transferencia { border-color: var(--text-muted); color: var(--text-muted); }
+
+.tag {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* -------------------- Categorias -------------------- */
+
+.columnas-categorias {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+@media (max-width: 560px) {
+    .columnas-categorias {
+        grid-template-columns: 1fr;
+    }
+}
+
+.titulo-columna {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.categoria-bloque {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+}
+
+.categoria-bloque:last-child {
+    border-bottom: none;
+}
+
+.categoria-bloque .titulo-categoria {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.titulo-categoria .acciones-categoria {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.titulo-categoria form {
+    display: inline;
+}
+
+.lista-subcategorias {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.lista-subcategorias li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+}
+
+.lista-subcategorias a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 11px;
+}
+
+.lista-subcategorias a:hover {
+    color: var(--red-bright);
+}
+
+.lista-subcategorias form {
+    display: inline;
+    line-height: 0;
+}
+
+.mini-x {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+    line-height: 1;
+}
+
+.mini-x:hover {
+    color: var(--red-bright);
+}
+
+/* -------------------- Formularios pequenos / inline -------------------- */
+
+.form-linea {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.form-linea .campo {
+    flex: 1;
+    min-width: 140px;
+}
+
+.form-linea button {
+    margin-top: 0;
+    height: 41px;
+}
+
+/* -------------------- Estado vacio -------------------- */
+
+.vacio {
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* -------------------- Enlace de volver -------------------- */
+
+.volver {
+    display: inline-block;
+    margin-bottom: 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.volver:hover {
+    color: var(--red-bright);
+}
+
+/* ============================================================
+   FINANZAS - ANALISIS
+   Mismos tokens de siempre (rojo/verde Raspberry Pi, mono para
+   titulos/numeros). Los graficos se dibujan con Chart.js pero las
+   tablas de desglose son CSS puro para que carguen rapido en la Pi.
+   ============================================================ */
+
+/* -------------------- Filtro de anio -------------------- */
+
+.filtro-analisis {
+    margin-bottom: 28px;
+}
+
+/* -------------------- Tarjetas KPI -------------------- */
+
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+}
+
+.kpi-card .etiqueta {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.kpi-card .cifra {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.kpi-card .cifra.ingreso { color: var(--green); }
+.kpi-card .cifra.gasto { color: var(--red-bright); }
+.kpi-card .cifra.positivo { color: var(--green); }
+.kpi-card .cifra.negativo { color: var(--red-bright); }
+
+/* -------------------- Bloques de graficos -------------------- */
+
+.bloque-analisis {
+    margin-bottom: 36px;
+}
+
+.titulo-bloque {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+.grafico-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    height: 280px;
+    position: relative;
+}
+
+.graficos-categorias {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 560px) {
+    .graficos-categorias {
+        grid-template-columns: 1fr;
+    }
+}
+
+.grafico-wrap .titulo-mini {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+/* -------------------- Barras de porcentaje -------------------- */
+
+.barra-porcentaje {
+    background: var(--bg);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    width: 100%;
+    margin-top: 6px;
+}
+
+.barra-relleno {
+    height: 100%;
+    border-radius: 4px;
+}
+
+.barra-relleno.gasto { background: var(--red-bright); }
+.barra-relleno.ingreso { background: var(--green); }
+
+/* -------------------- Filas de desglose por categoria -------------------- */
+
+.lista-analisis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 18px;
+}
+
+.fila-analisis {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.fila-analisis:last-child {
+    border-bottom: none;
+}
+
+.fila-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.fila-cabecera .porcentaje {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: var(--font-mono);
+}
+
+.subfilas {
+    margin-top: 10px;
+    padding-left: 14px;
+    border-left: 2px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fila-sub {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.fila-sub .monto {
+    font-size: 12px;
+}
+
+/* ============================================================
+   CADUCIDADES
+   Reutiliza los componentes ya existentes (.led, .kpi-card, .badge,
+   .tabla-wrap...). Solo hacen falta el LED ambar y el color de los
+   "dias restantes" para completar el semaforo caducado/proximo/vigente.
+   ============================================================ */
+
+.led.amarillo {
+    background: var(--amarillo);
+    box-shadow: 0 0 6px var(--amarillo);
+}
+
+.kpi-card .cifra.caducado { color: var(--red-bright); }
+.kpi-card .cifra.proximo { color: var(--amarillo); }
+.kpi-card .cifra.vigente { color: var(--green); }
+
+.dias-restantes {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.dias-restantes.caducado { color: var(--red-bright); }
+.dias-restantes.proximo { color: var(--amarillo); }
+.dias-restantes.vigente { color: var(--green); }
+
+/* -------------------- Texto tipo codigo (comandos de Telegram, etc.) -------------------- */
+
+code {
+    font-family: var(--font-mono);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.9em;
+    color: var(--text);
+}
+
+/* ============================================================
+   MODO GUIADO (nueva operacion, paso a paso como el bot)
+   ============================================================ */
+
+.progreso-pasos {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 22px;
+}
+
+.progreso-pasos span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+}
+
+.progreso-pasos span.hecho {
+    background: var(--green);
+}
+
+.progreso-pasos span.actual {
+    background: var(--red);
+    box-shadow: 0 0 6px var(--red);
+}
+
+/* Botones de opciones, apilados y a todo lo ancho, como el teclado
+   de botones que muestra el bot de Telegram. */
+.opciones-guiado {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.opciones-guiado button {
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    padding: 13px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.opciones-guiado button:hover {
+    border-color: var(--red);
+    background: var(--surface);
+}
+
+.resumen-linea {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+}
+
+.resumen-linea:last-of-type {
+    border-bottom: none;
+}
+
+.resumen-linea span {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.resumen-linea strong {
+    text-align: right;
+}

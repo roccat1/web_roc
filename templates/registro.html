@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Registro{% endblock %}
+
+{% block contenido %}
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <span class="eyebrow">Nuevo usuario</span>
+    <h1>Crear cuenta</h1>
+    <p class="subtitle">Elige un usuario y una contrasena</p>
+
+    <div class="card">
+        <form method="POST">
+            <div class="campo">
+                <label for="username">Usuario</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+
+            <div class="campo">
+                <label for="password">Contrasena</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit">Registrarme</button>
+        </form>
+    </div>
+
+    <p class="ayuda">Si ya tienes cuenta, <a href="{{ url_for('login') }}">inicia sesion aqui</a>.</p>
+{% endblock %}

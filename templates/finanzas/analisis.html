@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block titulo %}Analisis{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Volver a finanzas</a>
+
+    <span class="eyebrow">Analisis financiero</span>
+    <h1>Analisis</h1>
+    <p class="subtitle">{{ 'Tus gastos e ingresos por meses, categorias y cuentas' if not hay_datos else 'Mostrando: ' ~ etiqueta_periodo }}</p>
+
+    {% if not hay_datos %}
+        <p class="vacio">
+            Todavia no hay operaciones de gasto o ingreso para analizar.
+            <a href="{{ url_for('finanzas_nueva_operacion') }}" style="color: var(--green);">Registra la primera aqui</a>.
+        </p>
+    {% else %}
+        <form method="GET" class="form-linea filtro-analisis">
+            <div class="campo">
+                <label for="anio">Anio</label>
+                <select id="anio" name="anio" onchange="this.form.submit()">
+                    <option value="todos" {{ 'selected' if anio_seleccionado == 'todos' else '' }}>Todos los anios</option>
+                    {% for anio in anios_disponibles %}
+                        <option value="{{ anio }}" {{ 'selected' if anio_seleccionado == anio else '' }}>{{ anio }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if meses_disponibles %}
+                <div class="campo">
+                    <label for="mes">Mes</label>
+                    <select id="mes" name="mes" onchange="this.form.submit()">
+                        <option value="todos" {{ 'selected' if mes_seleccionado == 'todos' else '' }}>Todo el anio</option>
+                        {% for mes in meses_disponibles %}
+                            <option value="{{ mes }}" {{ 'selected' if mes_seleccionado == mes else '' }}>{{ nombres_meses[mes|int - 1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            <noscript><button type="submit" class="btn btn-pequeno">Filtrar</button></noscript>
+        </form>
+
+        <div class="kpis">
+            <div class="kpi-card">
+                <span class="etiqueta">Ingresos</span>
+                <div class="cifra ingreso">{{ total_ingresos | euros }}</div>
+            </div>
+            <div class="kpi-card">
+                <span class="etiqueta">Gastos</span>
+                <div class="cifra gasto">{{ total_gastos | euros }}</div>
+            </div>
+            <div class="kpi-card">
+                <span class="etiqueta">Ahorro</span>
+                <div class="cifra {{ 'positivo' if balance >= 0 else 'negativo' }}">{{ balance | euros }}</div>
+            </div>
+            <div class="kpi-card">
+                <span class="etiqueta">% Ahorrado</span>
+                <div class="cifra {{ 'positivo' if ahorro_pct >= 0 else 'negativo' }}">{{ "%.1f"|format(ahorro_pct) }}%</div>
+            </div>
+        </div>
+
+        <div class="bloque-analisis">
+            <div class="titulo-bloque">Ingresos y gastos por mes</div>
+            {% if mes_seleccionado != 'todos' %}
+                <p class="tag" style="margin: -4px 0 12px;">Este grafico siempre muestra el anio completo, para poder comparar meses.</p>
+            {% endif %}
+            <div class="grafico-wrap">
+                <canvas id="grafico-meses"></canvas>
+            </div>
+        </div>
+
+        {% if categorias_gasto or categorias_ingreso %}
+            <div class="bloque-analisis">
+                <div class="titulo-bloque">Reparto por categoria</div>
+                <div class="graficos-categorias">
+                    <div class="grafico-wrap">
+                        <div class="titulo-mini">Gastos</div>
+                        {% if categorias_gasto %}
+                            <canvas id="grafico-cat-gasto"></canvas>
+                        {% else %}
+                            <p class="vacio">Sin gastos en este periodo.</p>
+                        {% endif %}
+                    </div>
+                    <div class="grafico-wrap">
+                        <div class="titulo-mini">Ingresos</div>
+                        {% if categorias_ingreso %}
+                            <canvas id="grafico-cat-ingreso"></canvas>
+                        {% else %}
+                            <p class="vacio">Sin ingresos en este periodo.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="bloque-analisis">
+            <div class="titulo-bloque">Desglose de gastos</div>
+            {% if categorias_gasto %}
+                <div class="lista-analisis">
+                    {% for cat in categorias_gasto %}
+                        <div class="fila-analisis">
+                            <div class="fila-cabecera">
+                                <span>{{ cat.nombre }}</span>
+                                <span>
+                                    <span class="monto gasto">{{ cat.total | euros }}</span>
+                                    <span class="porcentaje">({{ "%.1f"|format(cat.porcentaje) }}%)</span>
+                                </span>
+                            </div>
+                            <div class="barra-porcentaje">
+                                <div class="barra-relleno gasto" style="width: {{ cat.porcentaje }}%;"></div>
+                            </div>
+                            {% if cat.subcategorias %}
+                                <div class="subfilas">
+                                    {% for sub in cat.subcategorias %}
+                                        <div class="fila-sub">
+                                            <span>{{ sub.nombre }}</span>
+                                            <span class="monto gasto">{{ sub.total | euros }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="vacio">Sin gastos en este periodo.</p>
+            {% endif %}
+        </div>
+
+        <div class="bloque-analisis">
+            <div class="titulo-bloque">Desglose de ingresos</div>
+            {% if categorias_ingreso %}
+                <div class="lista-analisis">
+                    {% for cat in categorias_ingreso %}
+                        <div class="fila-analisis">
+                            <div class="fila-cabecera">
+                                <span>{{ cat.nombre }}</span>
+                                <span>
+                                    <span class="monto ingreso">{{ cat.total | euros }}</span>
+                                    <span class="porcentaje">({{ "%.1f"|format(cat.porcentaje) }}%)</span>
+                                </span>
+                            </div>
+                            <div class="barra-porcentaje">
+                                <div class="barra-relleno ingreso" style="width: {{ cat.porcentaje }}%;"></div>
+                            </div>
+                            {% if cat.subcategorias %}
+                                <div class="subfilas">
+                                    {% for sub in cat.subcategorias %}
+                                        <div class="fila-sub">
+                                            <span>{{ sub.nombre }}</span>
+                                            <span class="monto ingreso">{{ sub.total | euros }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="vacio">Sin ingresos en este periodo.</p>
+            {% endif %}
+        </div>
+
+        <div class="bloque-analisis">
+            <div class="titulo-bloque">Gasto por cuenta</div>
+            {% if gasto_por_cuenta %}
+                <div class="lista-analisis">
+                    {% for cuenta in gasto_por_cuenta %}
+                        <div class="fila-analisis">
+                            <div class="fila-cabecera">
+                                <span>{{ cuenta.nombre }}</span>
+                                <span>
+                                    <span class="monto gasto">{{ cuenta.total | euros }}</span>
+                                    <span class="porcentaje">({{ "%.1f"|format(cuenta.porcentaje) }}%)</span>
+                                </span>
+                            </div>
+                            <div class="barra-porcentaje">
+                                <div class="barra-relleno gasto" style="width: {{ cuenta.porcentaje }}%;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="vacio">Sin gastos en este periodo.</p>
+            {% endif %}
+        </div>
+
+        {% if mes_seleccionado == 'todos' %}
+            <p class="vacio" style="font-size:12px;">
+                Gasto medio mensual en el periodo: <strong style="color: var(--text);">{{ gasto_medio_mensual | euros }}</strong>
+            </p>
+        {% endif %}
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+        <script>
+            // Colores que coinciden con las variables CSS del proyecto
+            // (Chart.js no puede leer variables CSS directamente).
+            const colorTexto = '#edf0f3';
+            const colorTextoMuted = '#8993a1';
+            const colorBorde = '#2a323c';
+            const colorRojo = '#e23361';
+            const colorVerde = '#7cb342';
+            const paletaCategorias = ['#c71e4a', '#7cb342', '#c98a4a', '#3f7f92', '#8f1436', '#4f7a2a', '#8993a1', '#e2996b'];
+
+            Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+
+            // --- Grafico de barras: ingresos vs gastos por mes ---
+            new Chart(document.getElementById('grafico-meses'), {
+                type: 'bar',
+                data: {
+                    labels: {{ meses | map(attribute='nombre') | list | tojson }},
+                    datasets: [
+                        {
+                            label: 'Ingresos',
+                            data: {{ meses | map(attribute='ingreso') | list | tojson }},
+                            backgroundColor: colorVerde,
+                            borderRadius: 4,
+                        },
+                        {
+                            label: 'Gastos',
+                            data: {{ meses | map(attribute='gasto') | list | tojson }},
+                            backgroundColor: colorRojo,
+                            borderRadius: 4,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: colorBorde }, ticks: { color: colorTextoMuted } },
+                        y: { grid: { color: colorBorde }, ticks: { color: colorTextoMuted }, beginAtZero: true },
+                    },
+                    plugins: {
+                        legend: { labels: { color: colorTexto } },
+                    },
+                },
+            });
+
+            {% if categorias_gasto %}
+            new Chart(document.getElementById('grafico-cat-gasto'), {
+                type: 'doughnut',
+                data: {
+                    labels: {{ categorias_gasto | map(attribute='nombre') | list | tojson }},
+                    datasets: [{
+                        data: {{ categorias_gasto | map(attribute='total') | list | tojson }},
+                        backgroundColor: paletaCategorias,
+                        borderColor: '#1b2129',
+                        borderWidth: 2,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: colorTexto, boxWidth: 11, font: { size: 11 } } },
+                    },
+                },
+            });
+            {% endif %}
+
+            {% if categorias_ingreso %}
+            new Chart(document.getElementById('grafico-cat-ingreso'), {
+                type: 'doughnut',
+                data: {
+                    labels: {{ categorias_ingreso | map(attribute='nombre') | list | tojson }},
+                    datasets: [{
+                        data: {{ categorias_ingreso | map(attribute='total') | list | tojson }},
+                        backgroundColor: paletaCategorias,
+                        borderColor: '#1b2129',
+                        borderWidth: 2,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: colorTexto, boxWidth: 11, font: { size: 11 } } },
+                    },
+                },
+            });
+            {% endif %}
+        </script>
+    {% endif %}
+{% endblock %}

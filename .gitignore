@@ -1,0 +1,8 @@
+# Datos y secretos: no se deben compartir ni subir a ningun repositorio
+.env
+usuarios.db
+
+# Python
+__pycache__/
+*.pyc
+venv/

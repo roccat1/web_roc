@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block titulo %}Categorias{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Volver a finanzas</a>
+
+    <span class="eyebrow">Organizacion</span>
+    <h1>Categorias y subcategorias</h1>
+    <p class="subtitle">Cada gasto o ingreso se clasifica con una de estas</p>
+
+    <div class="columnas-categorias">
+        <div>
+            <div class="titulo-columna" style="color: var(--red-bright);">Gastos</div>
+            {% if gastos %}
+                {% for cat in gastos %}
+                    <div class="categoria-bloque">
+                        <div class="titulo-categoria">
+                            <span>{{ cat.nombre }}</span>
+                            <span class="acciones-categoria">
+                                <a href="{{ url_for('finanzas_editar_categoria', categoria_id=cat.id) }}" class="btn btn-pequeno">Editar</a>
+                                <form method="POST" action="{{ url_for('finanzas_eliminar_categoria', categoria_id=cat.id) }}"
+                                      onsubmit="return confirm('¿Eliminar la categoria {{ cat.nombre }}?');">
+                                    <button type="submit" class="btn btn-peligro">Eliminar</button>
+                                </form>
+                            </span>
+                        </div>
+                        <ul class="lista-subcategorias">
+                            {% for sub in cat.subcategorias %}
+                                <li>
+                                    {{ sub.nombre }}
+                                    <a href="{{ url_for('finanzas_editar_subcategoria', subcategoria_id=sub.id) }}">✎</a>
+                                    <form method="POST" action="{{ url_for('finanzas_eliminar_subcategoria', subcategoria_id=sub.id) }}"
+                                          onsubmit="return confirm('¿Eliminar esta subcategoria?');">
+                                        <button type="submit" class="mini-x" title="Eliminar">×</button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <form method="POST" action="{{ url_for('finanzas_nueva_subcategoria') }}" class="form-linea">
+                            <input type="hidden" name="categoria_id" value="{{ cat.id }}">
+                            <div class="campo">
+                                <input type="text" name="nombre" placeholder="Nueva subcategoria" required>
+                            </div>
+                            <button type="submit" class="btn btn-pequeno">Anadir</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="vacio">Sin categorias de gasto todavia.</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <div class="titulo-columna" style="color: var(--green);">Ingresos</div>
+            {% if ingresos %}
+                {% for cat in ingresos %}
+                    <div class="categoria-bloque">
+                        <div class="titulo-categoria">
+                            <span>{{ cat.nombre }}</span>
+                            <span class="acciones-categoria">
+                                <a href="{{ url_for('finanzas_editar_categoria', categoria_id=cat.id) }}" class="btn btn-pequeno">Editar</a>
+                                <form method="POST" action="{{ url_for('finanzas_eliminar_categoria', categoria_id=cat.id) }}"
+                                      onsubmit="return confirm('¿Eliminar la categoria {{ cat.nombre }}?');">
+                                    <button type="submit" class="btn btn-peligro">Eliminar</button>
+                                </form>
+                            </span>
+                        </div>
+                        <ul class="lista-subcategorias">
+                            {% for sub in cat.subcategorias %}
+                                <li>
+                                    {{ sub.nombre }}
+                                    <a href="{{ url_for('finanzas_editar_subcategoria', subcategoria_id=sub.id) }}">✎</a>
+                                    <form method="POST" action="{{ url_for('finanzas_eliminar_subcategoria', subcategoria_id=sub.id) }}"
+                                          onsubmit="return confirm('¿Eliminar esta subcategoria?');">
+                                        <button type="submit" class="mini-x" title="Eliminar">×</button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <form method="POST" action="{{ url_for('finanzas_nueva_subcategoria') }}" class="form-linea">
+                            <input type="hidden" name="categoria_id" value="{{ cat.id }}">
+                            <div class="campo">
+                                <input type="text" name="nombre" placeholder="Nueva subcategoria" required>
+                            </div>
+                            <button type="submit" class="btn btn-pequeno">Anadir</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="vacio">Sin categorias de ingreso todavia.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Nueva categoria</h2>
+        <form method="POST" action="{{ url_for('finanzas_nueva_categoria') }}" class="form-linea">
+            <div class="campo">
+                <label for="nombre">Nombre</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ej: Alimentacion" required>
+            </div>
+            <div class="campo">
+                <label for="tipo">Tipo</label>
+                <select id="tipo" name="tipo">
+                    <option value="gasto">Gasto</option>
+                    <option value="ingreso">Ingreso</option>
+                </select>
+            </div>
+            <button type="submit">Crear categoria</button>
+        </form>
+    </div>
+{% endblock %}

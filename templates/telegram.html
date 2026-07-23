@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Telegram{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('dashboard') }}" class="volver">&larr; Volver a mi cuenta</a>
+
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Integracion</span>
+    <h1 style="text-align:center;">Bot de Telegram</h1>
+    <p class="subtitle">Consulta y registra gastos, ingresos y caducidades desde el movil</p>
+
+    <div class="card" style="text-align:center;">
+        <div class="nombre-cuenta" style="justify-content:center; margin-bottom:16px;">
+            <span class="led {{ 'verde' if vinculado else 'rojo' }}"></span>
+            {{ 'Vinculado' if vinculado else 'Sin vincular' }}
+        </div>
+
+        {% if vinculado %}
+            <p style="color: var(--text-muted); margin-top:0;">Tu cuenta ya esta conectada con tu bot de Telegram.</p>
+            <form method="POST" action="{{ url_for('telegram_desvincular') }}" onsubmit="return confirm('¿Desvincular Telegram? El bot dejara de reconocer tu chat.');">
+                <button type="submit" class="btn btn-peligro" style="font-size:12px; padding:9px 14px;">Desvincular</button>
+            </form>
+        {% elif codigo %}
+            <p style="color: var(--text-muted); margin: 0 0 10px;">Envia este mensaje a tu bot en Telegram:</p>
+            <p style="font-family: var(--font-mono); font-size:26px; letter-spacing:2px; color: var(--green); margin: 0 0 8px;">
+                /vincular {{ codigo }}
+            </p>
+            <p class="tag">Caduca en 10 minutos</p>
+            <form method="POST" action="{{ url_for('telegram_generar') }}" style="margin-top:16px;">
+                <button type="submit" class="btn btn-pequeno">Generar otro codigo</button>
+            </form>
+        {% else %}
+            <p style="color: var(--text-muted); margin-top:0;">Genera un codigo y envialo a tu bot para vincular tu cuenta.</p>
+            <form method="POST" action="{{ url_for('telegram_generar') }}">
+                <button type="submit" class="btn btn-primario">Generar codigo de vinculacion</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Como funciona</h2>
+        <ol style="color: var(--text-muted); font-size:14px; line-height:1.9; padding-left:20px; margin:0;">
+            <li>En tu Raspberry Pi, arranca el bot con <code>python3 bot.py</code> (una sola vez, ver README).</li>
+            <li>Pulsa "Generar codigo de vinculacion" aqui arriba.</li>
+            <li>Abre tu bot en Telegram y envia: <code>/vincular {{ codigo or '123456' }}</code></li>
+            <li>Listo. Escribe <code>/ayuda</code> en el bot para ver todos los comandos: <code>/saldo</code>, <code>/gasto</code>, <code>/ingreso</code>, <code>/transferencia</code>, <code>/caducidades</code>, <code>/nuevacaducidad</code>, <code>/revalidar</code>...</li>
+        </ol>
+    </div>
+{% endblock %}

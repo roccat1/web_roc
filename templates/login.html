@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Iniciar sesion{% endblock %}
+
+{% block contenido %}
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <span class="eyebrow">Acceso</span>
+    <h1>Iniciar sesion</h1>
+    <p class="subtitle">Entra con tu usuario y contrasena</p>
+
+    <div class="card">
+        <form method="POST">
+            <div class="campo">
+                <label for="username">Usuario</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+
+            <div class="campo">
+                <label for="password">Contrasena</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+
+    <p class="ayuda">Si no tienes cuenta, <a href="{{ url_for('registro') }}">registrate aqui</a>.</p>
+{% endblock %}
