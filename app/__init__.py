@@ -75,6 +75,8 @@ from . import caducidades_helpers
 from . import caducidades_routes
 from . import caca_helpers
 from . import caca_routes
+from . import calendario_helpers
+from . import calendario_routes
 from . import telegram_helpers
 from . import telegram_routes
 
@@ -82,6 +84,13 @@ from . import telegram_routes
 from .db import get_db_connection, init_db, CATEGORIAS_CADUCIDAD_SUGERIDAS
 from .finanzas_helpers import obtener_cuentas, obtener_categorias_con_subcategorias
 from .caducidades_helpers import obtener_caducidades, caducidad_del_usuario, marcar_aviso_enviado
+from .calendario_helpers import (
+    obtener_eventos,
+    evento_del_usuario,
+    obtener_categorias_calendario,
+    categoria_calendario_del_usuario,
+    marcar_aviso_evento_enviado,
+)
 from .telegram_helpers import (
     usuario_por_chat_id,
     vincular_chat_con_codigo,

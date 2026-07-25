@@ -1,6 +1,7 @@
 """
 Bot de Telegram para consultar y registrar informacion de la app: saldo de
-tus cuentas, gastos, ingresos, transferencias, y fechas de caducidad.
+tus cuentas, gastos, ingresos, transferencias, fechas de caducidad y
+eventos del calendario.
 
 Se ejecuta como un proceso APARTE de la web (python3 bot.py, no python3
 app.py), pero usa la misma base de datos SQLite (usuarios.db). Eso quiere
@@ -9,9 +10,10 @@ al reves: todo se guarda en el mismo sitio.
 
 Ademas, mientras este arrancado, una vez al dia (a la hora configurada en
 TELEGRAM_AVISO_HORA, en el .env) revisa todas las fechas de caducidad y
-te avisa por Telegram la primera vez que una entra en su ventana de
-aviso, y la primera vez que caduca. No vuelve a avisar de lo mismo hasta
-que revalides o edites la fecha.
+los eventos del calendario, y te avisa por Telegram la primera vez que
+uno entra en su ventana de aviso (y, en las caducidades, tambien cuando
+caduca). No vuelve a avisar de lo mismo hasta que revalides o edites el
+registro (o, en un evento recurrente, hasta la siguiente ocurrencia).
 
 ------------------------------------------------------------------
 COMO PONERLO EN MARCHA (resumen, ver README.md para mas detalle):
@@ -82,6 +84,18 @@ MENSAJES_AVISO_CADUCADO = [
     "\U0001F534 '{nombre}' ({categoria}) caduco hace {dias} dias. Tocaria revisarlo.",
 ]
 
+MENSAJES_AVISO_EVENTO_PROXIMO = [
+    "\U0001F4C5 Recordatorio: '{titulo}' ({categoria}) {texto_estado}.",
+    "\U0001F4C5 No se te olvide: '{titulo}' ({categoria}) {texto_estado}.",
+    "\U0001F4C5 '{titulo}' ({categoria}) se acerca: {texto_estado}.",
+]
+
+MENSAJES_AVISO_EVENTO_HOY = [
+    "\U0001F514 Hoy toca: '{titulo}' ({categoria}).",
+    "\U0001F514 Recuerda que hoy es '{titulo}' ({categoria}).",
+    "\U0001F514 '{titulo}' ({categoria}) es hoy. No te lo pierdas.",
+]
+
 # Comandos que apareceran en el menu de Telegram (el boton con forma de
 # '/' o 'Menu' junto al campo de texto), con una descripcion corta cada
 # uno. Se registran al arrancar el bot, en configurar_comandos().
@@ -89,11 +103,13 @@ COMANDOS_BOT = [
     BotCommand("saldo", "Saldo total y de cada cuenta"),
     BotCommand("movimientos", "Tus ultimas 5 operaciones"),
     BotCommand("caducidades", "Ver tus fechas de caducidad"),
+    BotCommand("calendario", "Ver tus proximos eventos"),
     BotCommand("comprobaravisos", "Forzar ya la comprobacion de avisos"),
     BotCommand("gasto", "Registrar un gasto"),
     BotCommand("ingreso", "Registrar un ingreso"),
     BotCommand("transferencia", "Mover dinero entre tus cuentas"),
     BotCommand("nuevacaducidad", "Anadir una fecha de caducidad"),
+    BotCommand("nuevoevento", "Anadir un evento al calendario"),
     BotCommand("revalidar", "Revalidar una fecha configurada"),
     BotCommand("vincular", "Vincular tu cuenta con un codigo"),
     BotCommand("desvincular", "Dejar de usar el bot con esta cuenta"),
@@ -130,6 +146,11 @@ async def configurar_comandos(aplicacion):
     CADUCIDAD_NOMBRE, CADUCIDAD_CATEGORIA, CADUCIDAD_FECHA,
     CADUCIDAD_AVISO, CADUCIDAD_REVALIDACION,
 ) = range(9, 14)
+
+(
+    EVENTO_TITULO, EVENTO_CATEGORIA, EVENTO_FECHA, EVENTO_TIPO_HORA,
+    EVENTO_HORA, EVENTO_RECORDATORIO, EVENTO_REPETIR,
+) = range(14, 21)
 
 
 async def obtener_usuario_o_avisar(update: Update):
@@ -183,12 +204,14 @@ async def comando_ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/saldo - saldo total y de cada cuenta\n"
         "/movimientos - tus ultimas 5 operaciones\n"
         "/caducidades - tus fechas de caducidad\n"
+        "/calendario - tus proximos eventos\n"
         "/comprobaravisos - forzar ya la comprobacion de avisos\n\n"
         "*Registrar*\n"
         "/gasto - registrar un gasto\n"
         "/ingreso - registrar un ingreso\n"
         "/transferencia - mover dinero entre tus cuentas\n"
         "/nuevacaducidad - anadir una fecha de caducidad\n"
+        "/nuevoevento - anadir un evento al calendario\n"
         "/revalidar - revalidar una que ya tenga dias configurados\n\n"
         "*Cuenta*\n"
         "/vincular <codigo> - vincular tu cuenta (el codigo se genera en la web)\n"
@@ -301,6 +324,33 @@ async def comando_caducidades(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
     if len(items) > 15:
         lineas.append(f"\n... y {len(items) - 15} mas. Mira el listado completo en la web.")
+
+    await update.message.reply_text("\n".join(lineas), parse_mode=ParseMode.MARKDOWN)
+
+
+async def comando_calendario(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    usuario = await obtener_usuario_o_avisar(update)
+    if usuario is None:
+        return
+
+    items = webapp.obtener_eventos(usuario["id"], incluir_pasados=False)
+    if not items:
+        await update.message.reply_text(
+            "No tienes ningun evento proximo. Anade uno con /nuevoevento, o desde la web."
+        )
+        return
+
+    emoji_por_estado = {"hoy": "\U0001F534", "proximo": "\U0001F7E1", "futuro": "\U0001F7E2"}
+    lineas = ["*Proximos eventos:*", ""]
+    for item in items[:15]:
+        hora = f" {item['hora']}" if item["hora"] else ""
+        repeticion = " \U0001F501" if item["repetir"] != "ninguna" else ""
+        lineas.append(
+            f"{emoji_por_estado[item['estado']]} {item['fecha_ocurrencia']}{hora} - "
+            f"{item['titulo']} ({item['categoria_nombre']}) - {item['texto_estado']}{repeticion}"
+        )
+    if len(items) > 15:
+        lineas.append(f"\n... y {len(items) - 15} mas. Mira el calendario completo en la web.")
 
     await update.message.reply_text("\n".join(lineas), parse_mode=ParseMode.MARKDOWN)
 
@@ -703,6 +753,186 @@ conversacion_caducidad = ConversationHandler(
 
 
 # =================================================================
+# Conversacion: /nuevoevento
+# =================================================================
+
+def _botones_recordatorio_evento():
+    return [
+        [InlineKeyboardButton("El mismo dia", callback_data="recordevento:0")],
+        [
+            InlineKeyboardButton("1 dia antes", callback_data="recordevento:1"),
+            InlineKeyboardButton("3 dias antes", callback_data="recordevento:3"),
+        ],
+        [InlineKeyboardButton("7 dias antes", callback_data="recordevento:7")],
+    ]
+
+
+async def iniciar_evento(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    usuario = await obtener_usuario_o_avisar(update)
+    if usuario is None:
+        return ConversationHandler.END
+
+    context.user_data["evento"] = {"usuario_id": usuario["id"]}
+    await update.message.reply_text(
+        "Vamos a anadir un evento al calendario. ¿Que titulo le pones? (ej: Cena con Marta)"
+    )
+    return EVENTO_TITULO
+
+
+async def evento_titulo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    titulo = update.message.text.strip()
+    if not titulo:
+        await update.message.reply_text("Escribe un titulo valido.")
+        return EVENTO_TITULO
+
+    context.user_data["evento"]["titulo"] = titulo
+    usuario_id = context.user_data["evento"]["usuario_id"]
+
+    categorias = webapp.obtener_categorias_calendario(usuario_id)
+    botones = [[InlineKeyboardButton(cat["nombre"], callback_data=f"catevento:{cat['id']}")] for cat in categorias]
+    botones.append([InlineKeyboardButton("Sin categoria", callback_data="catevento:0")])
+
+    await update.message.reply_text(
+        "¿Que categoria es? (puedes elegir 'Sin categoria')", reply_markup=InlineKeyboardMarkup(botones)
+    )
+    return EVENTO_CATEGORIA
+
+
+async def evento_categoria(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    categoria_id = int(query.data.split(":")[1])
+    context.user_data["evento"]["categoria_id"] = categoria_id or None
+
+    await query.edit_message_text("¿Que fecha? (formato AAAA-MM-DD, ej: 2026-08-15)")
+    return EVENTO_FECHA
+
+
+async def evento_fecha(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    texto = update.message.text.strip()
+    try:
+        date.fromisoformat(texto)
+    except ValueError:
+        await update.message.reply_text("Esa fecha no es valida. Usa el formato AAAA-MM-DD, ej: 2026-08-15")
+        return EVENTO_FECHA
+
+    context.user_data["evento"]["fecha"] = texto
+
+    botones = [[
+        InlineKeyboardButton("Todo el dia", callback_data="horaevento:todoeldia"),
+        InlineKeyboardButton("A una hora", callback_data="horaevento:hora"),
+    ]]
+    await update.message.reply_text("¿Todo el dia, o a una hora concreta?", reply_markup=InlineKeyboardMarkup(botones))
+    return EVENTO_TIPO_HORA
+
+
+async def evento_tipo_hora(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    eleccion = query.data.split(":")[1]
+
+    if eleccion == "hora":
+        context.user_data["evento"]["todo_el_dia"] = False
+        await query.edit_message_text("¿A que hora? (formato HH:MM, ej: 19:30)")
+        return EVENTO_HORA
+
+    context.user_data["evento"]["todo_el_dia"] = True
+    context.user_data["evento"]["hora"] = None
+    await query.edit_message_text(
+        "Vale, todo el dia.\n\n¿Con cuantos dias de antelacion quieres el aviso?",
+        reply_markup=InlineKeyboardMarkup(_botones_recordatorio_evento()),
+    )
+    return EVENTO_RECORDATORIO
+
+
+async def evento_hora(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    texto = update.message.text.strip()
+    try:
+        horas, minutos = texto.split(":")
+        if not (0 <= int(horas) <= 23 and 0 <= int(minutos) <= 59):
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text("Esa hora no es valida. Usa el formato HH:MM, ej: 19:30")
+        return EVENTO_HORA
+
+    context.user_data["evento"]["hora"] = texto
+    await update.message.reply_text(
+        "¿Con cuantos dias de antelacion quieres el aviso?",
+        reply_markup=InlineKeyboardMarkup(_botones_recordatorio_evento()),
+    )
+    return EVENTO_RECORDATORIO
+
+
+async def evento_recordatorio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    dias = int(query.data.split(":")[1])
+    context.user_data["evento"]["recordatorio_dias"] = dias
+
+    botones = [
+        [InlineKeyboardButton("No se repite", callback_data="repetirevento:ninguna")],
+        [
+            InlineKeyboardButton("Cada dia", callback_data="repetirevento:diaria"),
+            InlineKeyboardButton("Cada semana", callback_data="repetirevento:semanal"),
+        ],
+        [
+            InlineKeyboardButton("Cada mes", callback_data="repetirevento:mensual"),
+            InlineKeyboardButton("Cada ano", callback_data="repetirevento:anual"),
+        ],
+    ]
+    await query.edit_message_text("¿Se repite?", reply_markup=InlineKeyboardMarkup(botones))
+    return EVENTO_REPETIR
+
+
+async def evento_repetir(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    repetir = query.data.split(":")[1]
+
+    datos = context.user_data["evento"]
+    datos["repetir"] = repetir
+
+    # Los botones de categoria solo ofrecen las del propio usuario (o
+    # "Sin categoria"), pero comprobamos igualmente antes de guardar, por
+    # si el callback llega manipulado.
+    categoria_id = datos.get("categoria_id")
+    if categoria_id and not webapp.categoria_calendario_del_usuario(categoria_id, datos["usuario_id"]):
+        categoria_id = None
+
+    conn = webapp.get_db_connection()
+    conn.execute("""
+        INSERT INTO calendario_eventos
+            (usuario_id, titulo, categoria_id, fecha, hora, todo_el_dia, recordatorio_dias, repetir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        datos["usuario_id"], datos["titulo"], categoria_id, datos["fecha"],
+        datos.get("hora"), 1 if datos["todo_el_dia"] else 0, datos["recordatorio_dias"], repetir,
+    ))
+    conn.commit()
+    conn.close()
+
+    resumen_hora = f" a las {datos['hora']}" if datos.get("hora") else " (todo el dia)"
+    await query.edit_message_text(f"\u2705 '{datos['titulo']}' anadido el {datos['fecha']}{resumen_hora}.")
+    context.user_data.pop("evento", None)
+    return ConversationHandler.END
+
+
+conversacion_evento = ConversationHandler(
+    entry_points=[CommandHandler("nuevoevento", iniciar_evento)],
+    states={
+        EVENTO_TITULO: [MessageHandler(filters.TEXT & ~filters.COMMAND, evento_titulo)],
+        EVENTO_CATEGORIA: [CallbackQueryHandler(evento_categoria, pattern=r"^catevento:")],
+        EVENTO_FECHA: [MessageHandler(filters.TEXT & ~filters.COMMAND, evento_fecha)],
+        EVENTO_TIPO_HORA: [CallbackQueryHandler(evento_tipo_hora, pattern=r"^horaevento:")],
+        EVENTO_HORA: [MessageHandler(filters.TEXT & ~filters.COMMAND, evento_hora)],
+        EVENTO_RECORDATORIO: [CallbackQueryHandler(evento_recordatorio, pattern=r"^recordevento:")],
+        EVENTO_REPETIR: [CallbackQueryHandler(evento_repetir, pattern=r"^repetirevento:")],
+    },
+    fallbacks=[CommandHandler("cancelar", comando_cancelar)],
+)
+
+
+# =================================================================
 # /revalidar (no es una conversacion: un comando + botones)
 # =================================================================
 
@@ -810,11 +1040,70 @@ async def revisar_caducidades(context: ContextTypes.DEFAULT_TYPE):
     print(f"[avisos] Revision terminada: {total_enviados} aviso(s) enviado(s).")
 
 
+def _texto_aviso_evento_si_toca(item):
+    """
+    Si a este evento le toca avisar ahora (esta 'hoy' o dentro de su
+    ventana de recordatorio, y todavia no se aviso de ESTA ocurrencia
+    concreta), devuelve el texto ya formateado. Si no le toca, devuelve
+    None. Comparar contra 'fecha_ocurrencia' (en vez de un simple
+    si/no) es lo que hace que un evento recurrente vuelva a avisar en
+    cada repeticion, sin repetir el mismo aviso dos veces para la misma.
+    """
+    if item["aviso_enviado_fecha"] == item["fecha_ocurrencia"]:
+        return None
+
+    if item["estado"] == "hoy":
+        plantilla = random.choice(MENSAJES_AVISO_EVENTO_HOY)
+    elif item["estado"] == "proximo":
+        plantilla = random.choice(MENSAJES_AVISO_EVENTO_PROXIMO)
+    else:
+        return None
+
+    return plantilla.format(
+        titulo=item["titulo"],
+        categoria=item["categoria_nombre"],
+        texto_estado=item["texto_estado"][0].lower() + item["texto_estado"][1:],
+    )
+
+
+async def revisar_eventos(context: ContextTypes.DEFAULT_TYPE):
+    """
+    Tarea programada: recorre los eventos del calendario de todos los
+    usuarios con Telegram vinculado, y envia un mensaje la primera vez
+    que uno entra en su ventana de recordatorio, y la primera vez que
+    llega el mismo dia. En los recurrentes, esto se repite en cada
+    ocurrencia. Se ejecuta junto con revisar_caducidades (ver main()).
+    """
+    conn = webapp.get_db_connection()
+    usuarios = conn.execute(
+        "SELECT id, telegram_chat_id FROM usuarios WHERE telegram_chat_id IS NOT NULL"
+    ).fetchall()
+    conn.close()
+
+    print(f"[avisos] Revisando el calendario de {len(usuarios)} usuario(s) con Telegram vinculado...")
+    total_enviados = 0
+
+    for usuario in usuarios:
+        for item in webapp.obtener_eventos(usuario["id"], incluir_pasados=False):
+            texto = _texto_aviso_evento_si_toca(item)
+            if texto is None:
+                continue
+
+            try:
+                await context.bot.send_message(chat_id=usuario["telegram_chat_id"], text=texto)
+                webapp.marcar_aviso_evento_enviado(item["id"], item["fecha_ocurrencia"])
+                total_enviados += 1
+            except Exception as error:
+                print(f"[avisos] No se pudo avisar a {usuario['telegram_chat_id']}: {error}")
+
+    print(f"[avisos] Revision del calendario terminada: {total_enviados} aviso(s) enviado(s).")
+
+
 async def comando_comprobar_avisos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Fuerza ya mismo la comprobacion de TUS caducidades, sin esperar a la
-    hora programada. Util para probar que los avisos funcionan, o para no
-    tener que esperar a manana.
+    Fuerza ya mismo la comprobacion de TUS caducidades y de TU calendario,
+    sin esperar a la hora programada. Util para probar que los avisos
+    funcionan, o para no tener que esperar a manana.
     """
     usuario = await obtener_usuario_o_avisar(update)
     if usuario is None:
@@ -829,10 +1118,18 @@ async def comando_comprobar_avisos(update: Update, context: ContextTypes.DEFAULT
         webapp.marcar_aviso_enviado(item["id"], item["estado"])
         enviados += 1
 
+    for item in webapp.obtener_eventos(usuario["id"], incluir_pasados=False):
+        texto = _texto_aviso_evento_si_toca(item)
+        if texto is None:
+            continue
+        await update.message.reply_text(texto)
+        webapp.marcar_aviso_evento_enviado(item["id"], item["fecha_ocurrencia"])
+        enviados += 1
+
     if enviados == 0:
         await update.message.reply_text(
             "No hay ningun aviso pendiente ahora mismo: o no te toca todavia, o ya te "
-            "avisamos de todo lo que tocaba. Usa /caducidades para ver el estado de todo."
+            "avisamos de todo lo que tocaba. Usa /caducidades y /calendario para ver el estado de todo."
         )
 
 
@@ -870,6 +1167,7 @@ def main():
     aplicacion.add_handler(CommandHandler("saldo", comando_saldo))
     aplicacion.add_handler(CommandHandler("movimientos", comando_movimientos))
     aplicacion.add_handler(CommandHandler("caducidades", comando_caducidades))
+    aplicacion.add_handler(CommandHandler("calendario", comando_calendario))
     aplicacion.add_handler(CommandHandler("revalidar", comando_revalidar))
     aplicacion.add_handler(CommandHandler("comprobaravisos", comando_comprobar_avisos))
     aplicacion.add_handler(CallbackQueryHandler(revalidar_callback, pattern=r"^revalidar:"))
@@ -877,6 +1175,7 @@ def main():
     aplicacion.add_handler(conversacion_operacion)
     aplicacion.add_handler(conversacion_transferencia)
     aplicacion.add_handler(conversacion_caducidad)
+    aplicacion.add_handler(conversacion_evento)
 
     # Este handler va el ultimo: solo se dispara si ningun otro ha
     # respondido ya al mensaje.
@@ -886,20 +1185,22 @@ def main():
 
     if aplicacion.job_queue is not None:
         aplicacion.job_queue.run_daily(revisar_caducidades, time=HORA_AVISO, name="revisar_caducidades")
+        aplicacion.job_queue.run_daily(revisar_eventos, time=HORA_AVISO, name="revisar_eventos")
         # Ademas de la revision diaria, hacemos una nada mas arrancar (unos
         # segundos despues de conectar), para no tener que esperar hasta la
         # hora programada para comprobar que los avisos funcionan.
         aplicacion.job_queue.run_once(revisar_caducidades, when=5, name="revisar_caducidades_al_arrancar")
+        aplicacion.job_queue.run_once(revisar_eventos, when=5, name="revisar_eventos_al_arrancar")
         zona_texto = str(ZONA_HORARIA) if ZONA_HORARIA else "UTC"
         print(f"Aviso automatico programado todos los dias a las {HORA_AVISO.strftime('%H:%M')} ({zona_texto}).")
         print("Ademas, se hara una primera comprobacion en unos segundos (mira la consola).")
     else:
         print(
-            "Aviso: no se han programado los avisos automaticos de caducidades porque falta "
-            'el extra "job-queue". Instalalo con:\n'
+            "Aviso: no se han programado los avisos automaticos (caducidades ni calendario) porque "
+            'falta el extra "job-queue". Instalalo con:\n'
             '  pip install "python-telegram-bot[job-queue]==22.8" --break-system-packages\n'
-            "El resto del bot (comandos, /gasto, /caducidades, etc.) funciona igual sin esto. "
-            "Tambien puedes usar /comprobaravisos en cualquier momento para comprobarlo a mano."
+            "El resto del bot (comandos, /gasto, /caducidades, /calendario, etc.) funciona igual sin "
+            "esto. Tambien puedes usar /comprobaravisos en cualquier momento para comprobarlo a mano."
         )
 
     print("Bot arrancado. Pulsa Ctrl+C para pararlo.")

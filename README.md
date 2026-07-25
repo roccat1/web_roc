@@ -1,29 +1,35 @@
-# App Flask basica con login (SQLite) + Finanzas + Caducidades + Caca + Bot de Telegram
+# App Flask basica con login (SQLite) + Finanzas + Caducidades + Calendario + Caca + Bot de Telegram
 
 Web hecha con Flask que tiene:
 - Pagina de inicio
 - Registro de usuarios
 - Login / logout
 - Un **dashboard** ("Mi cuenta") con un resumen general: saldo de finanzas,
-  estado de las fechas de caducidad, si tienes el bot de Telegram
-  vinculado, y tus registros de "Caca"
+  estado de las fechas de caducidad, tus proximos eventos del calendario,
+  si tienes el bot de Telegram vinculado, y tus registros de "Caca"
 - Una seccion de **Finanzas personales**: cuentas, categorias, subcategorias,
   gastos, ingresos, transferencias entre cuentas, y un apartado de analisis
   con graficos (por anio y por mes)
 - Una seccion de **Fechas de caducidad**: para llevar el control de
   documentacion, mantenimiento del coche, seguros o lo que el usuario
   quiera anadir, con avisos y un boton de revalidacion rapida
+- Una seccion de **Calendario personal**: eventos con categorias propias
+  (con su color), vista mensual y vista de lista, eventos de un dia
+  completo o a una hora concreta, eventos que se repiten (a diario, cada
+  semana, cada mes o cada anio) y recordatorios configurables
 - Una seccion de **Caca**: registro rapido de una actividad con hora
   exacta, historial, y una pagina de estadisticas con graficos (por dias,
   meses, anios, y por hora del dia) y un sistema de perfil publico/privado
   para comparar con otros usuarios de la app
 - Un **bot de Telegram** para consultar y registrar todo lo anterior desde
   el movil, sin abrir el navegador, con avisos automaticos de caducidades
+  y de eventos del calendario
 - Base de datos local en SQLite (un archivo `usuarios.db`, no hace falta instalar ningun servidor de base de datos)
 
 Cada usuario tiene sus propias cuentas, categorias, operaciones, fechas
-de caducidad y registros de Caca: son completamente independientes entre
-usuarios distintos (salvo que marques tu perfil de Caca como publico).
+de caducidad, eventos de calendario y registros de Caca: son completamente
+independientes entre usuarios distintos (salvo que marques tu perfil de
+Caca como publico).
 
 ## Estructura de archivos
 
@@ -45,6 +51,8 @@ flask_login_app/
 │   ├── finanzas_analisis.py         <- pagina de analisis con graficos
 │   ├── caducidades_helpers.py       <- calculo de estado y validacion del formulario
 │   ├── caducidades_routes.py        <- listado, alta, edicion, borrado, revalidar
+│   ├── calendario_helpers.py        <- ocurrencias de eventos (incl. recurrentes), estado, validacion
+│   ├── calendario_routes.py         <- vista mensual, vista de lista, alta, edicion, borrado, categorias
 │   ├── caca_helpers.py              <- lectura de registros y perfiles visibles
 │   ├── caca_routes.py               <- registrar, historial, estadisticas, privacidad
 │   ├── telegram_helpers.py          <- vincular/desvincular (las usa tambien bot.py)
@@ -75,6 +83,13 @@ flask_login_app/
     │   ├── index.html                <- listado, filtros y resumen de caducidades
     │   ├── nueva.html                <- formulario para anadir una fecha
     │   └── editar.html                <- formulario para editar / renovar una fecha
+    ├── calendario/
+    │   ├── index.html                <- vista mensual (rejilla con navegacion entre meses)
+    │   ├── lista.html                 <- vista de lista/agenda, con filtros
+    │   ├── nuevo.html                 <- formulario para anadir un evento
+    │   ├── editar.html                <- formulario para editar / eliminar un evento
+    │   ├── categorias.html            <- listado y creacion de categorias del calendario
+    │   └── editar_categoria.html      <- formulario para editar una categoria
     └── caca/
         ├── index.html                <- registrar ahora, formulario manual, historial
         └── estadisticas.html          <- KPIs, grafico y privacidad publico/privado
@@ -82,10 +97,11 @@ flask_login_app/
 
 La logica que antes estaba toda junta en un unico `app.py` ahora vive
 dividida en la carpeta `app/`, con un archivo por tema (autenticacion,
-finanzas, caducidades, caca, telegram...). `app/__init__.py` es quien
-crea la app Flask y va importando cada uno de esos archivos para que
-registren sus rutas; el resto del comportamiento es exactamente el
-mismo que antes, incluido `bot.py`, que no ha hecho falta tocar.
+finanzas, caducidades, calendario, caca, telegram...). `app/__init__.py`
+es quien crea la app Flask y va importando cada uno de esos archivos
+para que registren sus rutas; el resto del comportamiento es exactamente
+el mismo que antes. `bot.py` reutiliza esa misma logica (a traves de
+`import app as webapp`) para los comandos y los avisos automaticos.
 
 ## Configuracion (`.env`)
 
@@ -222,12 +238,58 @@ dejas en blanco, el registro no tiene boton de revalidar y hay que
 cambiar la fecha a mano desde "Editar" (util para fechas puntuales que
 no se repiten).
 
+## Calendario personal (`Calendario`)
+
+Una agenda propia para citas, quedadas, cumpleanos o cualquier evento
+con fecha (y, opcionalmente, hora). Tiene dos formas de verlo:
+- **Vista mensual**: una rejilla tipo calendario, con un punto de color
+  por cada evento del dia (el color es el de su categoria) y navegacion
+  entre meses. Tocar un dia abre el formulario de "nuevo evento" con esa
+  fecha ya rellenada.
+- **Vista de lista**: todos los eventos en formato agenda, con filtros
+  por categoria y por estado, y la opcion de incluir tambien los que ya
+  pasaron.
+
+Cada evento tiene:
+- **Titulo** (ej. "Cena con Marta")
+- **Categoria** (opcional): las creas tu mismo en `Calendario ->
+  Categorias`, cada una con un nombre y un color a elegir entre 8
+  disponibles
+- **Fecha**, y **todo el dia** o **a una hora concreta**
+- **Lugar** y **descripcion** (opcionales)
+- **Avisar con antelacion (dias)**: cuantos dias antes quieres el
+  recordatorio (0 = el mismo dia)
+- **Repetir**: ninguna, diaria, semanal, mensual o anual, con una fecha
+  limite opcional (si se deja en blanco, se repite indefinidamente)
+
+Segun lo cerca que este su proxima ocurrencia, cada evento se clasifica
+igual que las caducidades:
+- ⚫ **Pasado** (LED gris): ya ocurrio (y, si era recurrente, no le
+  quedan mas repeticiones)
+- 🔴 **Hoy** (LED rojo): es hoy
+- 🟡 **Proximo** (LED ambar): dentro de la ventana marcada en "avisar
+  con antelacion"
+- 🟢 **Futuro** (LED verde): todavia queda tiempo de sobra
+
+En los eventos que se repiten, la app calcula sola cual es su proxima
+ocurrencia (o, en la vista mensual, todas las que caen dentro del mes
+que estas mirando): no hace falta crear una fila por cada repeticion.
+
+### Categorias del calendario
+
+Se gestionan aparte, en `Calendario -> Categorias`: crea las que
+quieras, cada una con un nombre y un color. Si borras una categoria que
+ya tenia eventos asignados, esos eventos no se borran, simplemente se
+quedan sin categoria.
+
 ## Panel general (`Mi cuenta`)
 
 El dashboard que se ve tras iniciar sesion combina en una sola pantalla:
 - El saldo total de Finanzas y el numero de cuentas, con acceso directo
 - El resumen de Caducidades (cuantas caducadas / proximas) y las 5
   fechas mas urgentes, con acceso directo
+- El resumen del Calendario (eventos de hoy / proximos) y tus 5
+  proximos eventos, con acceso directo
 - Si tienes o no el bot de Telegram vinculado, con acceso a esa pagina
 - Cuantos registros de Caca tienes, con acceso directo
 
@@ -291,6 +353,7 @@ Puedes desvincular la cuenta en cualquier momento, desde la web
 - `/saldo` - saldo total y el de cada cuenta
 - `/movimientos` - tus ultimas 5 operaciones
 - `/caducidades` - todas tus fechas de caducidad, con su estado
+- `/calendario` - tus proximos eventos, con su estado
 - `/comprobaravisos` - fuerza ya la comprobacion de avisos (sin esperar a la hora programada)
 
 **Registrar** (te van preguntando paso a paso, con botones para elegir
@@ -299,6 +362,8 @@ categoria, subcategoria y cuenta de una lista, igual que en la web)
 - `/ingreso` - registrar un ingreso
 - `/transferencia` - mover dinero entre dos de tus cuentas
 - `/nuevacaducidad` - anadir una fecha de caducidad nueva
+- `/nuevoevento` - anadir un evento al calendario (categoria, fecha,
+  hora u "todo el dia", recordatorio y repeticion, todo con botones)
 - `/revalidar` - revalidar (con un boton) una que ya tenga dias de
   revalidacion configurados
 
@@ -310,26 +375,33 @@ categoria, subcategoria y cuenta de una lista, igual que en la web)
 ### Avisos automaticos
 
 Mientras el bot este arrancado, cada dia a las 9:00 (hora configurable en
-el `.env`, variable `TELEGRAM_AVISO_HORA`) revisa las fechas de caducidad de todos
-los usuarios con Telegram vinculado y te envia un mensaje:
+el `.env`, variable `TELEGRAM_AVISO_HORA`) revisa las fechas de caducidad
+y los eventos del calendario de todos los usuarios con Telegram vinculado,
+y te envia un mensaje:
 - 🟡 la primera vez que un registro entra en su ventana de aviso (los
-  "dias de antelacion" que configuraste)
-- 🔴 la primera vez que un registro caduca
+  "dias de antelacion" que configuraste), tanto en Caducidades como en
+  Calendario
+- 🔴 la primera vez que un registro caduca (Caducidades) o llega el
+  mismo dia del evento (Calendario)
 
 Cada aviso se envia **una sola vez**: no te va a escribir todos los dias
-sobre lo mismo. Si revalidas el registro (boton "Revalidar" o editando
-la fecha, desde la web o desde el bot), vuelve a poder avisarte en el
-futuro, cuando le toque de nuevo.
+sobre lo mismo. Si revalidas el registro de caducidad (boton "Revalidar"
+o editando la fecha), o editas un evento del calendario, vuelve a poder
+avisarte en el futuro, cuando le toque de nuevo. En un evento
+**recurrente**, esto pasa solo automaticamente: cada ocurrencia nueva
+puede avisar otra vez, sin tener que tocar nada.
 
 Ademas de la comprobacion diaria, el bot hace **una comprobacion nada
 mas arrancar** (unos segundos despues de conectar), para no tener que
 esperar hasta la hora programada para ver si funciona. Tambien puedes
-forzarla tu mismo en cualquier momento con el comando **`/comprobaravisos`**.
+forzarla tu mismo en cualquier momento con el comando **`/comprobaravisos`**
+(revisa a la vez caducidades y calendario).
 
 El texto de los avisos se elige al azar de unas listas de mensajes
 predefinidos, para que no suene siempre igual. Estan al principio de
-`bot.py`, en `MENSAJES_AVISO_PROXIMO` y `MENSAJES_AVISO_CADUCADO`, y
-puedes anadir, quitar o reescribir los que quieras:
+`bot.py` (`MENSAJES_AVISO_PROXIMO` y `MENSAJES_AVISO_CADUCADO` para
+Caducidades; `MENSAJES_AVISO_EVENTO_PROXIMO` y `MENSAJES_AVISO_EVENTO_HOY`
+para Calendario), y puedes anadir, quitar o reescribir los que quieras:
 
 ```python
 MENSAJES_AVISO_PROXIMO = [
@@ -339,9 +411,10 @@ MENSAJES_AVISO_PROXIMO = [
 ]
 ```
 
-Dentro de cada mensaje puedes usar `{nombre}`, `{categoria}`, `{dias}`
-(numero de dias, siempre positivo) y `{texto_estado}` (ej. "caduca en
-5 dias").
+Dentro de cada mensaje de Caducidades puedes usar `{nombre}`,
+`{categoria}`, `{dias}` (numero de dias, siempre positivo) y
+`{texto_estado}` (ej. "caduca en 5 dias"); en los de Calendario, lo
+mismo pero con `{titulo}` en vez de `{nombre}`.
 
 Para que los avisos automaticos funcionen hace falta instalar la
 libreria con el extra `job-queue` (ya incluido en `requirements.txt`):
@@ -364,15 +437,18 @@ pero programa la hora en UTC en vez de en tu hora local, y te avisa de
 ello por consola.
 
 **Si los avisos no te llegan**, revisa la consola donde tienes
-`bot.py` corriendo: cada vez que se comprueban las caducidades (al
-arrancar, cada dia a la hora programada, o al usar `/comprobaravisos`)
-se imprime una linea `[avisos] ...` con cuantos usuarios y cuantos
-avisos se han enviado. Las causas mas habituales de que no llegue nada:
-- No tienes ningun registro en estado "proximo" o "caducado" (los
-  "vigentes" no avisan nunca, es normal). Comprueba en `/caducidades`.
-- Ya se aviso de ese registro antes (por eso no se repite). Prueba a
-  revalidarlo o editar su fecha para reiniciar el aviso, y luego usa
-  `/comprobaravisos`.
+`bot.py` corriendo: cada vez que se comprueban las caducidades o el
+calendario (al arrancar, cada dia a la hora programada, o al usar
+`/comprobaravisos`) se imprime una linea `[avisos] ...` con cuantos
+usuarios y cuantos avisos se han enviado. Las causas mas habituales de
+que no llegue nada:
+- No tienes ningun registro en estado "proximo" o "caducado" / "hoy"
+  (los "vigentes" / "futuros" no avisan nunca, es normal). Comprueba en
+  `/caducidades` o `/calendario`.
+- Ya se aviso de ese registro antes (por eso no se repite). En
+  Caducidades, prueba a revalidarlo o editar su fecha; en Calendario,
+  edita el evento (o espera a la siguiente ocurrencia, si es
+  recurrente), y luego usa `/comprobaravisos`.
 - Falta el extra `job-queue` (te lo dice la consola al arrancar). Aun
   asi, `/comprobaravisos` deberia funcionar sin este extra.
 

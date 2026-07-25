@@ -31,6 +31,22 @@ CATEGORIAS_CADUCIDAD_SUGERIDAS = [
 # Color del LED segun lo urgente que sea una fecha de caducidad.
 COLOR_LED_POR_ESTADO = {"caducado": "rojo", "proximo": "amarillo", "vigente": "verde"}
 
+# Categorias que se sugieren (pero no obligan) al crear una categoria del calendario.
+CATEGORIAS_CALENDARIO_SUGERIDAS = [
+    "Personal", "Trabajo", "Salud", "Familia", "Ocio", "Cumpleanos", "Viajes", "Otros",
+]
+
+# Colores disponibles para las categorias del calendario. Se guarda solo la
+# clave en la base de datos; el color real (variable CSS) lo define
+# style.css con clases ".cat-<clave>", igual que se hace con los LED.
+COLORES_CALENDARIO = ("rojo", "amarillo", "verde", "azul", "morado", "cian", "rosa", "gris")
+
+# Con que frecuencia puede repetirse un evento del calendario.
+OPCIONES_REPETICION_CALENDARIO = ("ninguna", "diaria", "semanal", "mensual", "anual")
+
+# Color del LED segun lo cerca que este un evento del calendario.
+COLOR_LED_POR_ESTADO_EVENTO = {"pasado": "gris", "hoy": "rojo", "proximo": "amarillo", "futuro": "verde"}
+
 
 def get_db_connection():
     """Abre una conexion a la base de datos SQLite."""
@@ -185,6 +201,37 @@ def init_db():
         conn.execute("ALTER TABLE usuarios ADD COLUMN perfil_publico INTEGER NOT NULL DEFAULT 0")
     except sqlite3.OperationalError:
         pass
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_categorias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            nombre TEXT NOT NULL,
+            color TEXT NOT NULL DEFAULT 'azul',
+            FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_eventos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            titulo TEXT NOT NULL,
+            categoria_id INTEGER,
+            fecha TEXT NOT NULL,
+            hora TEXT,
+            todo_el_dia INTEGER NOT NULL DEFAULT 1,
+            lugar TEXT,
+            descripcion TEXT,
+            recordatorio_dias INTEGER NOT NULL DEFAULT 0,
+            repetir TEXT NOT NULL DEFAULT 'ninguna'
+                CHECK (repetir IN ('ninguna', 'diaria', 'semanal', 'mensual', 'anual')),
+            repetir_hasta TEXT,
+            aviso_enviado_fecha TEXT,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
+            FOREIGN KEY (categoria_id) REFERENCES calendario_categorias (id)
+        )
+    """)
 
     conn.commit()
     conn.close()

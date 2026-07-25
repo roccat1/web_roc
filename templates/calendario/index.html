@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block titulo %}Calendario{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Agenda</span>
+    <h1 style="text-align:center;">Calendario</h1>
+    <p class="subtitle">Eventos, citas y recordatorios, organizados por categoria</p>
+
+    <div class="header-finanzas">
+        <div class="acciones">
+            <a href="{{ url_for('calendario_nuevo') }}" class="btn btn-primario">+ Nuevo evento</a>
+            <a href="{{ url_for('calendario_lista') }}" class="btn btn-pequeno">Ver como lista</a>
+            <a href="{{ url_for('calendario_categorias') }}" class="btn btn-pequeno">Categorias</a>
+        </div>
+    </div>
+
+    <div class="calendario-nav">
+        <a href="{{ url_for('calendario', anio=mes_anterior_anio, mes=mes_anterior) }}" class="btn btn-pequeno">&larr;</a>
+        <span class="mes-actual">{{ nombre_mes }} {{ anio }}</span>
+        <a href="{{ url_for('calendario', anio=mes_siguiente_anio, mes=mes_siguiente) }}" class="btn btn-pequeno">&rarr;</a>
+    </div>
+
+    {% if not es_mes_actual %}
+        <p style="text-align:center; margin: -12px 0 20px;">
+            <a href="{{ url_for('calendario') }}" style="color: var(--green); font-family: var(--font-mono); font-size:12px; text-decoration:none;">Ir al mes actual</a>
+        </p>
+    {% endif %}
+
+    <div class="calendario-grid">
+        {% for nombre_dia in nombres_dias %}
+            <div class="calendario-cabecera-dia">{{ nombre_dia }}</div>
+        {% endfor %}
+
+        {% for semana in semanas %}
+            {% for dia in semana %}
+                {% if dia is none %}
+                    <div class="calendario-dia vacio"></div>
+                {% else %}
+                    <div class="calendario-dia {{ 'hoy' if dia.es_hoy else '' }}">
+                        <a href="{{ url_for('calendario_nuevo', fecha='%04d-%02d-%02d' % (anio, mes, dia.numero)) }}">
+                            <span class="numero-dia">{{ dia.numero }}</span>
+                            {% if dia.eventos %}
+                                <span class="mini-puntos">
+                                    {% for evento in dia.eventos[:4] %}
+                                        <span class="cat-dot cat-{{ evento.categoria_color }}"></span>
+                                    {% endfor %}
+                                    {% if dia.eventos | length > 4 %}
+                                        <span class="mini-mas">+{{ dia.eventos | length - 4 }}</span>
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                        </a>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <p class="tag" style="text-align:center; margin: 4px 0 32px;">
+        Toca un dia para anadir un evento en esa fecha
+    </p>
+
+    <h2 style="font-family: var(--font-mono); font-size:14px; letter-spacing:1px; text-transform:uppercase;">
+        Proximos eventos
+    </h2>
+
+    {% if proximos_eventos %}
+        <div class="card" style="padding: 8px 20px;">
+            {% for evento in proximos_eventos %}
+                <div class="evento-fila">
+                    <span class="cat-dot cat-{{ evento.categoria_color }}"></span>
+                    <div class="evento-info">
+                        <div class="evento-titulo">
+                            {{ evento.titulo }}
+                            {% if evento.repetir != 'ninguna' %}<span class="tag">&#8635;</span>{% endif %}
+                        </div>
+                        <div class="evento-meta">
+                            {{ evento.fecha_ocurrencia }}{% if evento.hora %} &middot; {{ evento.hora }}{% endif %}
+                            &middot; {{ evento.categoria_nombre }}
+                            &middot; <span class="dias-restantes {{ evento.estado }}">{{ evento.texto_estado }}</span>
+                        </div>
+                    </div>
+                    <div class="evento-acciones">
+                        <a href="{{ url_for('calendario_editar', evento_id=evento.id) }}" class="btn btn-pequeno">Editar</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="vacio">
+            No tienes eventos proximos.
+            <a href="{{ url_for('calendario_nuevo') }}" style="color: var(--green);">Anade el primero aqui</a>.
+        </p>
+    {% endif %}
+{% endblock %}

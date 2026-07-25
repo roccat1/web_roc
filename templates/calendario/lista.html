@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block titulo %}Calendario - Lista{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Volver a la vista mensual</a>
+
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Agenda</span>
+    <h1 style="text-align:center;">Todos los eventos</h1>
+    <p class="subtitle">Vista de lista, con filtros por categoria y estado</p>
+
+    <div class="header-finanzas" style="margin-top:20px;">
+        <div class="acciones">
+            <a href="{{ url_for('calendario_nuevo') }}" class="btn btn-primario">+ Nuevo evento</a>
+        </div>
+    </div>
+
+    <div class="kpis">
+        <div class="kpi-card">
+            <span class="etiqueta">Hoy</span>
+            <div class="cifra hoy">{{ resumen.hoy }}</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Proximos</span>
+            <div class="cifra proximo">{{ resumen.proximo }}</div>
+        </div>
+        <div class="kpi-card">
+            <span class="etiqueta">Futuros</span>
+            <div class="cifra futuro">{{ resumen.futuro }}</div>
+        </div>
+    </div>
+
+    <form method="GET" class="form-linea filtro-analisis">
+        <div class="campo">
+            <label for="estado">Estado</label>
+            <select id="estado" name="estado" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                <option value="hoy" {{ 'selected' if estado_filtro == 'hoy' else '' }}>Hoy</option>
+                <option value="proximo" {{ 'selected' if estado_filtro == 'proximo' else '' }}>Proximos</option>
+                <option value="futuro" {{ 'selected' if estado_filtro == 'futuro' else '' }}>Futuros</option>
+                {% if incluir_pasados %}
+                    <option value="pasado" {{ 'selected' if estado_filtro == 'pasado' else '' }}>Pasados</option>
+                {% endif %}
+            </select>
+        </div>
+        {% if categorias %}
+            <div class="campo">
+                <label for="categoria">Categoria</label>
+                <select id="categoria" name="categoria" onchange="this.form.submit()">
+                    <option value="">Todas</option>
+                    {% for cat in categorias %}
+                        <option value="{{ cat.id }}" {{ 'selected' if categoria_filtro == cat.id else '' }}>{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <input type="hidden" name="pasados" value="{{ '1' if incluir_pasados else '' }}">
+        <noscript><button type="submit" class="btn btn-pequeno">Filtrar</button></noscript>
+    </form>
+
+    <p style="text-align:center; margin: -10px 0 20px;">
+        {% if incluir_pasados %}
+            <a href="{{ url_for('calendario_lista', categoria=categoria_filtro, estado=estado_filtro) }}" style="color: var(--text-muted); font-family: var(--font-mono); font-size:11px; text-decoration:none;">Ocultar eventos pasados</a>
+        {% else %}
+            <a href="{{ url_for('calendario_lista', categoria=categoria_filtro, estado=estado_filtro, pasados=1) }}" style="color: var(--text-muted); font-family: var(--font-mono); font-size:11px; text-decoration:none;">Mostrar tambien eventos pasados</a>
+        {% endif %}
+    </p>
+
+    {% if items %}
+        <div class="card" style="padding: 8px 20px;">
+            {% for evento in items %}
+                <div class="evento-fila">
+                    <span class="cat-dot cat-{{ evento.categoria_color }}"></span>
+                    <div class="evento-info">
+                        <div class="evento-titulo">
+                            {{ evento.titulo }}
+                            {% if evento.repetir != 'ninguna' %}<span class="tag">&#8635; {{ evento.repetir }}</span>{% endif %}
+                        </div>
+                        <div class="evento-meta">
+                            {{ evento.fecha_ocurrencia }}{% if evento.hora %} &middot; {{ evento.hora }}{% endif %}
+                            &middot; <span class="badge">{{ evento.categoria_nombre }}</span>
+                            &middot; <span class="dias-restantes {{ evento.estado }}">{{ evento.texto_estado }}</span>
+                        </div>
+                        {% if evento.lugar %}<div class="evento-meta">&#128205; {{ evento.lugar }}</div>{% endif %}
+                        {% if evento.descripcion %}<div class="evento-meta">{{ evento.descripcion }}</div>{% endif %}
+                    </div>
+                    <div class="evento-acciones">
+                        <a href="{{ url_for('calendario_editar', evento_id=evento.id) }}" class="btn btn-pequeno">Editar</a>
+                        <form method="POST" action="{{ url_for('calendario_eliminar', evento_id=evento.id) }}"
+                              style="display:inline;" onsubmit="return confirm('¿Eliminar {{ evento.titulo }}?');">
+                            <button type="submit" class="btn btn-peligro">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="vacio">
+            Ningun evento coincide con lo que buscas.
+            <a href="{{ url_for('calendario_nuevo') }}" style="color: var(--green);">Anade uno aqui</a>.
+        </p>
+    {% endif %}
+{% endblock %}

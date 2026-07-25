@@ -37,6 +37,18 @@
 
         <div class="cuenta-card">
             <div class="nombre-cuenta">
+                <span class="led {{ 'rojo' if resumen_calendario.hoy > 0 else ('amarillo' if resumen_calendario.proximo > 0 else 'verde') }}"></span>
+                Calendario
+            </div>
+            <div class="saldo">{{ total_eventos_futuros }} evento{{ 's' if total_eventos_futuros != 1 else '' }}</div>
+            <p class="tag" style="margin: 6px 0 14px;">
+                {{ resumen_calendario.hoy }} hoy &middot; {{ resumen_calendario.proximo }} proximos
+            </p>
+            <a href="{{ url_for('calendario') }}" class="btn btn-pequeno">Ir al calendario &rarr;</a>
+        </div>
+
+        <div class="cuenta-card">
+            <div class="nombre-cuenta">
                 <span class="led {{ 'verde' if telegram_vinculado else 'rojo' }}"></span>
                 Telegram
             </div>
@@ -72,6 +84,29 @@
                             <td>{{ item.nombre }}</td>
                             <td>{{ item.fecha_caducidad }}</td>
                             <td><span class="dias-restantes {{ item.estado }}">{{ item.texto_estado }}</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    {% if proximos_eventos %}
+        <h2 style="font-family: var(--font-mono); font-size:14px; letter-spacing:1px; text-transform:uppercase; margin-top:36px;">
+            Proximos eventos
+        </h2>
+        <div class="tabla-wrap">
+            <table>
+                <thead>
+                    <tr><th></th><th>Titulo</th><th>Fecha</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    {% for evento in proximos_eventos %}
+                        <tr>
+                            <td><span class="cat-dot cat-{{ evento.categoria_color }}"></span></td>
+                            <td>{{ evento.titulo }}</td>
+                            <td>{{ evento.fecha_ocurrencia }}{% if evento.hora %} {{ evento.hora }}{% endif %}</td>
+                            <td><span class="dias-restantes {{ evento.estado }}">{{ evento.texto_estado }}</span></td>
                         </tr>
                     {% endfor %}
                 </tbody>

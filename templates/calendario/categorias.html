@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block titulo %}Categorias del calendario{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Volver al calendario</a>
+
+    <span class="eyebrow">Organizacion</span>
+    <h1>Categorias del calendario</h1>
+    <p class="subtitle">Cada evento se puede clasificar con una de estas (opcional)</p>
+
+    {% if categorias %}
+        <div class="card">
+            <div class="lista-categorias-calendario">
+                {% for cat in categorias %}
+                    <div class="categoria-calendario-fila">
+                        <span class="cat-dot cat-{{ cat.color }}"></span>
+                        <span class="nombre">{{ cat.nombre }}</span>
+                        <a href="{{ url_for('calendario_editar_categoria', categoria_id=cat.id) }}" class="btn btn-pequeno">Editar</a>
+                        <form method="POST" action="{{ url_for('calendario_eliminar_categoria', categoria_id=cat.id) }}"
+                              onsubmit="return confirm('¿Eliminar la categoria {{ cat.nombre }}? Los eventos que la usan se quedaran sin categoria.');">
+                            <button type="submit" class="btn btn-peligro">Eliminar</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <p class="vacio">Aun no has creado ninguna categoria.</p>
+    {% endif %}
+
+    <div class="card">
+        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Nueva categoria</h2>
+        <form method="POST" action="{{ url_for('calendario_nueva_categoria') }}">
+            <div class="campo">
+                <label for="nombre">Nombre</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ej: Trabajo" required autofocus>
+            </div>
+            <div class="campo">
+                <label>Color</label>
+                <div class="selector-colores">
+                    {% for color in colores %}
+                        <span class="opcion-color">
+                            <input type="radio" name="color" id="color-{{ color }}" value="{{ color }}" {{ 'checked' if color == 'azul' else '' }}>
+                            <label for="color-{{ color }}" class="swatch cat-{{ color }}"></label>
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit">Crear categoria</button>
+        </form>
+    </div>
+{% endblock %}

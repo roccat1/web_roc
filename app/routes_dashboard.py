@@ -11,6 +11,7 @@ from .auth_utils import login_requerido
 from .db import get_db_connection
 from .finanzas_helpers import obtener_cuentas
 from .caducidades_helpers import obtener_caducidades
+from .calendario_helpers import obtener_eventos
 
 
 @app.route("/dashboard")
@@ -27,6 +28,12 @@ def dashboard():
         "caducado": sum(1 for i in items_caducidad if i["estado"] == "caducado"),
         "proximo": sum(1 for i in items_caducidad if i["estado"] == "proximo"),
         "vigente": sum(1 for i in items_caducidad if i["estado"] == "vigente"),
+    }
+
+    eventos_futuros = obtener_eventos(usuario_id, incluir_pasados=False)
+    resumen_calendario = {
+        "hoy": sum(1 for e in eventos_futuros if e["estado"] == "hoy"),
+        "proximo": sum(1 for e in eventos_futuros if e["estado"] == "proximo"),
     }
 
     conn = get_db_connection()
@@ -48,6 +55,9 @@ def dashboard():
         total_caducidades=len(items_caducidad),
         # Las 5 mas urgentes: obtener_caducidades ya las devuelve ordenadas por fecha.
         proximas_caducidades=items_caducidad[:5],
+        resumen_calendario=resumen_calendario,
+        total_eventos_futuros=len(eventos_futuros),
+        proximos_eventos=eventos_futuros[:5],
         telegram_vinculado=bool(fila_usuario["telegram_chat_id"]),
         total_caca=total_caca,
     )

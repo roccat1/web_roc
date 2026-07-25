@@ -16,6 +16,10 @@
     --red-bright: #e23361;
     --green: #7cb342;    /* verde Raspberry Pi */
     --amarillo: #e0a83f; /* LED ambar, para avisos y estados "proximo" */
+    --azul: #4a9fd8;     /* colores extra para las categorias del calendario */
+    --morado: #9b6bd6;
+    --cian: #3fc7c1;
+    --rosa: #e0629f;
     --text: #edf0f3;
     --text-muted: #8993a1;
     --font-mono: 'Space Mono', 'Courier New', monospace;
@@ -1079,4 +1083,292 @@ code {
 
 .resumen-linea strong {
     text-align: right;
+}
+
+/* ============================================================
+   CALENDARIO
+   Vista mensual tipo "rejilla de LEDs": cada dia es una celdita y los
+   eventos se marcan con puntos de color (uno por categoria) en vez de
+   texto, para que quepa bien incluso en pantallas de movil estrechas.
+   El detalle de cada evento se lee debajo, en la lista de "Proximos".
+   ============================================================ */
+
+/* -------------------- Colores de categoria -------------------- */
+
+.cat-rojo { background: var(--red-bright); }
+.cat-amarillo { background: var(--amarillo); }
+.cat-verde { background: var(--green); }
+.cat-azul { background: var(--azul); }
+.cat-morado { background: var(--morado); }
+.cat-cian { background: var(--cian); }
+.cat-rosa { background: var(--rosa); }
+.cat-gris { background: var(--text-muted); }
+
+.badge-cat {
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.badge-cat .cat-dot { box-shadow: none; }
+
+.led.gris {
+    background: var(--text-muted);
+    box-shadow: 0 0 6px var(--text-muted);
+}
+
+/* -------------------- Navegacion entre meses -------------------- */
+
+.calendario-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 20px 0 18px;
+}
+
+.calendario-nav .mes-actual {
+    flex: 1;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.calendario-vistas {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+/* -------------------- Rejilla del mes -------------------- */
+
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.calendario-cabecera-dia {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding-bottom: 6px;
+}
+
+.calendario-dia {
+    min-height: 46px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.calendario-dia.vacio {
+    background: transparent;
+    border-color: transparent;
+}
+
+.calendario-dia.hoy {
+    border-color: var(--red);
+}
+
+.calendario-dia .numero-dia {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+.calendario-dia.hoy .numero-dia {
+    color: var(--red-bright);
+    font-weight: 700;
+}
+
+.calendario-dia a {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: 100%;
+    text-decoration: none;
+}
+
+.mini-puntos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    align-items: center;
+    justify-content: center;
+}
+
+.cat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.mini-mas {
+    font-size: 8px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+@media (max-width: 480px) {
+    .calendario-dia { min-height: 38px; padding: 3px; }
+    .calendario-cabecera-dia { font-size: 9px; }
+}
+
+/* -------------------- Estados de eventos -------------------- */
+
+.dias-restantes.pasado { color: var(--text-muted); }
+.dias-restantes.hoy { color: var(--red-bright); }
+.dias-restantes.proximo { color: var(--amarillo); }
+.dias-restantes.futuro { color: var(--green); }
+
+.kpi-card .cifra.hoy { color: var(--red-bright); }
+.kpi-card .cifra.futuro { color: var(--green); }
+
+/* -------------------- Lista de eventos (agenda) -------------------- */
+
+.evento-fila {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.evento-fila:last-child {
+    border-bottom: none;
+}
+
+.evento-fila .cat-dot {
+    width: 9px;
+    height: 9px;
+    margin-top: 5px;
+}
+
+.evento-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.evento-titulo {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.evento-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 3px;
+}
+
+.evento-acciones {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* -------------------- Selector de color (categorias) -------------------- */
+
+.selector-colores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.selector-colores .opcion-color {
+    position: relative;
+}
+
+.selector-colores input[type="radio"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.selector-colores .swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: block;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+}
+
+.selector-colores input[type="radio"]:checked + .swatch {
+    border-color: var(--text);
+    transform: scale(1.12);
+}
+
+/* -------------------- Casillas (todo el dia, etc.) -------------------- */
+
+.campo-checkbox {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.campo-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--red);
+    cursor: pointer;
+}
+
+.campo-checkbox label {
+    text-transform: none;
+    letter-spacing: normal;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--text);
+}
+
+/* -------------------- Lista de categorias del calendario -------------------- */
+
+.lista-categorias-calendario {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.categoria-calendario-fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.categoria-calendario-fila:last-child {
+    border-bottom: none;
+}
+
+.categoria-calendario-fila .nombre {
+    flex: 1;
+    font-weight: 600;
+}
+
+.categoria-calendario-fila .cat-dot {
+    width: 12px;
+    height: 12px;
 }

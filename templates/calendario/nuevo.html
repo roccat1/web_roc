@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo evento{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Volver al calendario</a>
+
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Nuevo</span>
+    <h1>Nuevo evento</h1>
+    <p class="subtitle">Citas, quedadas, cumpleanos, recordatorios...</p>
+
+    <div class="card">
+        <form method="POST" id="formulario-evento">
+            <div class="campo">
+                <label for="titulo">Titulo</label>
+                <input type="text" id="titulo" name="titulo" placeholder="Ej: Cena con Marta" required autofocus>
+            </div>
+
+            <div class="campo">
+                <label for="categoria_id">Categoria</label>
+                <select id="categoria_id" name="categoria_id">
+                    <option value="">Sin categoria</option>
+                    {% for cat in categorias %}
+                        <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
+                {% if not categorias %}
+                    <p class="tag" style="margin: 6px 0 0;">
+                        Puedes <a href="{{ url_for('calendario_categorias') }}" style="color: var(--green);">crear categorias</a> para organizar mejor tus eventos (opcional).
+                    </p>
+                {% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="fecha">Fecha</label>
+                <input type="date" id="fecha" name="fecha" value="{{ fecha_preseleccionada }}" required>
+            </div>
+
+            <div class="campo campo-checkbox">
+                <input type="checkbox" id="todo_el_dia" name="todo_el_dia" checked>
+                <label for="todo_el_dia">Todo el dia (sin hora concreta)</label>
+            </div>
+
+            <div class="campo" id="campo-hora" style="display:none;">
+                <label for="hora">Hora</label>
+                <input type="time" id="hora" name="hora">
+            </div>
+
+            <div class="campo">
+                <label for="lugar">Lugar (opcional)</label>
+                <input type="text" id="lugar" name="lugar" placeholder="Ej: Casa de Marta">
+            </div>
+
+            <div class="campo">
+                <label for="descripcion">Descripcion (opcional)</label>
+                <input type="text" id="descripcion" name="descripcion">
+            </div>
+
+            <div class="campo">
+                <label for="recordatorio_dias">Avisar con antelacion (dias)</label>
+                <input type="number" id="recordatorio_dias" name="recordatorio_dias" value="0" min="0">
+                <p class="tag" style="margin: 6px 0 0;">
+                    0 = avisar el mismo dia del evento. Si tienes el bot de Telegram
+                    vinculado, te llegara un mensaje cuando toque.
+                </p>
+            </div>
+
+            <div class="campo">
+                <label for="repetir">Repetir</label>
+                <select id="repetir" name="repetir">
+                    {% for opcion in opciones_repeticion %}
+                        <option value="{{ opcion }}">{{ opcion | capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="campo" id="campo-repetir-hasta" style="display:none;">
+                <label for="repetir_hasta">Repetir hasta (opcional)</label>
+                <input type="date" id="repetir_hasta" name="repetir_hasta">
+                <p class="tag" style="margin: 6px 0 0;">Si lo dejas en blanco, se repite indefinidamente.</p>
+            </div>
+
+            <button type="submit">Guardar</button>
+        </form>
+    </div>
+
+    <script>
+        const casillaTodoElDia = document.getElementById('todo_el_dia');
+        const campoHora = document.getElementById('campo-hora');
+
+        function actualizarCampoHora() {
+            campoHora.style.display = casillaTodoElDia.checked ? 'none' : 'block';
+        }
+        casillaTodoElDia.addEventListener('change', actualizarCampoHora);
+        actualizarCampoHora();
+
+        const selectRepetir = document.getElementById('repetir');
+        const campoRepetirHasta = document.getElementById('campo-repetir-hasta');
+
+        function actualizarCampoRepetirHasta() {
+            campoRepetirHasta.style.display = selectRepetir.value === 'ninguna' ? 'none' : 'block';
+        }
+        selectRepetir.addEventListener('change', actualizarCampoRepetirHasta);
+        actualizarCampoRepetirHasta();
+    </script>
+{% endblock %}
