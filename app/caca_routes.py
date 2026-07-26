@@ -35,8 +35,8 @@ def caca():
             try:
                 fecha_hora = datetime.strptime(fecha_texto, "%Y-%m-%dT%H:%M").strftime("%Y-%m-%dT%H:%M:%S")
             except ValueError:
-                flash("La fecha no es valida.")
-                return "La fecha no es valida.", 400
+                flash("La data no es valida.")
+                return "La data no es valida.", 400
 
         conn = get_db_connection()
         conn.execute(
@@ -46,7 +46,7 @@ def caca():
         conn.commit()
         conn.close()
 
-        flash("Registro anadido correctamente.")
+        flash("Registre afegit correctament.")
         return "OK", 200
 
     registros = obtener_registros_caca(usuario_id)
@@ -67,7 +67,7 @@ def caca_eliminar(registro_id):
     ).fetchone()
 
     if fila is None:
-        flash("Ese registro no existe.")
+        flash("Aquest registre no existeix.")
         conn.close()
         return redirect(url_for("caca"))
 
@@ -75,7 +75,7 @@ def caca_eliminar(registro_id):
     conn.commit()
     conn.close()
 
-    flash("Registro eliminado.")
+    flash("Registre eliminat.")
     return redirect(url_for("caca"))
 
 
@@ -86,7 +86,7 @@ def caca_estadisticas():
     usuario_objetivo_id = request.args.get("usuario_id", type=int) or usuario_id
 
     if not puede_ver_registros_de(usuario_id, usuario_objetivo_id):
-        flash("No puedes ver las estadisticas de ese usuario.")
+        flash("No pots veure les estadistiques d'aquest usuari.")
         usuario_objetivo_id = usuario_id
 
     usuarios_visibles = usuarios_visibles_para(usuario_id)
@@ -124,5 +124,5 @@ def caca_privacidad():
     conn.commit()
     conn.close()
 
-    flash("Privacidad actualizada.")
+    flash("Privacitat actualitzada.")
     return redirect(url_for("caca_estadisticas"))

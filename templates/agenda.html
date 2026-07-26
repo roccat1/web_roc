@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titulo %}Agenda{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <div class="pin-row">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="eyebrow">Tot en una vista</span>
+    <h1 style="text-align:center;">Agenda</h1>
+    <p class="subtitle">Esdeveniments del calendari i caducitats properes, per ordre de data (propers {{ horizonte_dias }} dies)</p>
+
+    <div class="header-finanzas">
+        <div class="acciones">
+            <a href="{{ url_for('calendario') }}" class="btn btn-pequeno">Calendari</a>
+            <a href="{{ url_for('caducidades') }}" class="btn btn-pequeno">Caducitats</a>
+        </div>
+    </div>
+
+    {% if grupos %}
+        {% for grupo in grupos %}
+            <h2 style="font-family: var(--font-mono); font-size:13px; letter-spacing:1px; text-transform:uppercase; margin-top:28px;">
+                {{ grupo.etiqueta }}
+            </h2>
+            <div class="card" style="padding: 8px 20px;">
+                {% for item in grupo['items'] %}
+                    <div class="evento-fila">
+                        <span class="led {{ item.led }}"></span>
+                        <div class="evento-info">
+                            <div class="evento-titulo">
+                                {{ item.titulo }}
+                                <span class="tag">{{ 'Calendari' if item.tipo == 'evento' else 'Caducitat' }}</span>
+                            </div>
+                            <div class="evento-meta">
+                                {{ item.fecha }}{% if item.hora %} &middot; {{ item.hora }}{% endif %}
+                                {% if item.subtitulo %}&middot; {{ item.subtitulo }}{% endif %}
+                                &middot; {{ item.texto_estado }}
+                            </div>
+                        </div>
+                        <div class="evento-acciones">
+                            {% if item.tipo == 'evento' %}
+                                <a href="{{ url_for('calendario_editar', evento_id=item.id) }}" class="btn btn-pequeno">Veure</a>
+                            {% else %}
+                                <a href="{{ url_for('caducidades_editar', caducidad_id=item.id) }}" class="btn btn-pequeno">Veure</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="vacio">No tens res pendent en els propers {{ horizonte_dias }} dies. 🎉</p>
+    {% endif %}
+{% endblock %}

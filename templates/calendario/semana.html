@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titulo %}Calendari - Setmana{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Tornar a la vista mensual</a>
+
+    <span class="eyebrow">Agenda</span>
+    <h1 style="text-align:center;">Setmana</h1>
+    <p class="subtitle">Cada dia amb el titol i l'hora dels seus esdeveniments</p>
+
+    <div class="header-finanzas" style="margin-top:20px;">
+        <div class="acciones">
+            <a href="{{ url_for('calendario_nuevo') }}" class="btn btn-primario">+ Nou esdeveniment</a>
+            <a href="{{ url_for('calendario_lista') }}" class="btn btn-pequeno">Llista</a>
+        </div>
+    </div>
+
+    <div class="calendario-nav">
+        <a href="{{ url_for('calendario_semana', lunes=semana_anterior) }}" class="btn btn-pequeno">&larr;</a>
+        <span class="mes-actual">{{ rango_texto }}</span>
+        <a href="{{ url_for('calendario_semana', lunes=semana_siguiente) }}" class="btn btn-pequeno">&rarr;</a>
+    </div>
+
+    {% if not es_semana_actual %}
+        <p style="text-align:center; margin: -12px 0 20px;">
+            <a href="{{ url_for('calendario_semana') }}" style="color: var(--green); font-family: var(--font-mono); font-size:12px; text-decoration:none;">Anar a la setmana actual</a>
+        </p>
+    {% endif %}
+
+    <div class="semana-grid">
+        {% for dia in dias %}
+            <div class="semana-dia {{ 'hoy' if dia.es_hoy else '' }}">
+                <a href="{{ url_for('calendario_dia', fecha=dia.fecha) }}" class="semana-dia-cabecera">
+                    <span class="semana-dia-nombre">{{ dia.nombre_dia }}</span>
+                    <span class="semana-dia-numero">{{ dia.numero }}</span>
+                </a>
+                {% if dia.eventos %}
+                    <div class="semana-dia-eventos">
+                        {% for evento in dia.eventos %}
+                            <a href="{{ url_for('calendario_dia', fecha=dia.fecha) }}" class="semana-evento">
+                                <span class="cat-dot cat-{{ evento.categoria_color }}"></span>
+                                {% if evento.hora %}<span class="semana-evento-hora">{{ evento.hora }}</span>{% endif %}
+                                <span class="semana-evento-titulo">{{ evento.titulo }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('calendario_nuevo', fecha=dia.fecha) }}" class="semana-dia-buit">+ Afegir</a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

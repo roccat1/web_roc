@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% block titulo %}Iniciar sesion{% endblock %}
+{% block titulo %}Iniciar sessio{% endblock %}
 
 {% block contenido %}
     <div class="pin-row">
         <span></span><span></span><span></span><span></span><span></span>
     </div>
 
-    <span class="eyebrow">Acceso</span>
-    <h1>Iniciar sesion</h1>
-    <p class="subtitle">Entra con tu usuario y contrasena</p>
+    <span class="eyebrow">Acces</span>
+    <h1>Iniciar sessio</h1>
+    <p class="subtitle">Entra amb el teu usuari i contrasenya</p>
 
     <div class="card">
         <form method="POST">
             <div class="campo">
-                <label for="username">Usuario</label>
+                <label for="username">Usuari</label>
                 <input type="text" id="username" name="username" required autofocus>
             </div>
 
             <div class="campo">
-                <label for="password">Contrasena</label>
+                <label for="password">Contrasenya</label>
                 <input type="password" id="password" name="password" required>
             </div>
 
@@ -26,5 +26,5 @@
         </form>
     </div>
 
-    <p class="ayuda">Si no tienes cuenta, <a href="{{ url_for('registro') }}">registrate aqui</a>.</p>
+    <p class="ayuda">Si no tens compte, <a href="{{ url_for('registro') }}">registra't aqui</a>.</p>
 {% endblock %}

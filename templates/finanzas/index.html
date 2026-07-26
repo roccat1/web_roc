@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block titulo %}Finanzas{% endblock %}
+{% block titulo %}Finances{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
     <div class="pin-row">
         <span></span><span></span><span></span><span></span><span></span>
     </div>
-    <span class="eyebrow">Panel financiero</span>
-    <h1 style="text-align:center;">Finanzas</h1>
+    <span class="eyebrow">Panell financer</span>
+    <h1 style="text-align:center;">Finances</h1>
 
     <div class="header-finanzas" style="margin-top:20px;">
         <div class="acciones">
-            <a href="{{ url_for('finanzas_nueva_operacion') }}" class="btn btn-primario">+ Nueva operacion</a>
-            <a href="{{ url_for('finanzas_analisis') }}" class="btn">Analisis</a>
-            <a href="{{ url_for('finanzas_categorias') }}" class="btn">Categorias</a>
-            <a href="{{ url_for('finanzas_cuentas') }}" class="btn">Cuentas</a>
+            <a href="{{ url_for('finanzas_nueva_operacion') }}" class="btn btn-primario">+ Nova operacio</a>
+            <a href="{{ url_for('finanzas_analisis') }}" class="btn">Analisi</a>
+            <a href="{{ url_for('finanzas_categorias') }}" class="btn">Categories</a>
+            <a href="{{ url_for('finanzas_cuentas') }}" class="btn">Comptes</a>
         </div>
     </div>
 
@@ -37,19 +37,19 @@
         </div>
     {% elif not cuentas_ahorro %}
         <p class="vacio">
-            Aun no tienes ninguna cuenta.
-            <a href="{{ url_for('finanzas_cuentas') }}" style="color: var(--green);">Crea la primera aqui</a>.
+            Encara no tens cap compte.
+            <a href="{{ url_for('finanzas_cuentas') }}" style="color: var(--green);">Crea el primer aqui</a>.
         </p>
     {% endif %}
 
     {% if cuentas_ahorro %}
         <h2 style="font-family: var(--font-mono); font-size:14px; letter-spacing:1px; text-transform:uppercase; margin-top:36px;">
-            Ahorros
+            Estalvis
         </h2>
-        <p class="tag" style="margin: -4px 0 14px;">No se cuentan en el saldo total</p>
+        <p class="tag" style="margin: -4px 0 14px;">No es compten en el saldo total</p>
 
         <div class="saldo-total" style="margin-top:0;">
-            <span class="eyebrow">Total en ahorros</span>
+            <span class="eyebrow">Total en estalvis</span>
             <div class="cifra {{ 'negativo' if saldo_ahorros < 0 else 'positivo' }}">{{ saldo_ahorros | euros }}</div>
         </div>
 
@@ -67,48 +67,48 @@
     {% endif %}
 
     <h2 style="font-family: var(--font-mono); font-size:14px; letter-spacing:1px; text-transform:uppercase; margin-top:36px;">
-        Ultimos movimientos
+        Ultims moviments
     </h2>
 
     {% if operaciones %}
         <div class="tabla-wrap">
-            <table>
+            <table class="tabla-responsive">
                 <thead>
                     <tr>
-                        <th>Fecha</th>
-                        <th>Tipo</th>
-                        <th>Cuenta</th>
+                        <th>Data</th>
+                        <th>Tipus</th>
+                        <th>Compte</th>
                         <th>Categoria</th>
-                        <th>Importe</th>
+                        <th>Import</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for op in operaciones %}
                         <tr>
-                            <td>{{ op['fecha'] }}</td>
-                            <td><span class="badge badge-{{ op['tipo'] }}">{{ op['tipo'] }}</span></td>
-                            <td>
+                            <td data-label="Data">{{ op['fecha'] }}</td>
+                            <td data-label="Tipus"><span class="badge badge-{{ op['tipo'] }}">{{ {'gasto': 'Despesa', 'ingreso': 'Ingres', 'transferencia': 'Transferencia'}[op['tipo']] }}</span></td>
+                            <td data-label="Compte">
                                 {% if op['tipo'] == 'transferencia' %}
                                     {{ op['cuenta_nombre'] }} &rarr; {{ op['cuenta_destino_nombre'] }}
                                 {% else %}
                                     {{ op['cuenta_nombre'] }}
                                 {% endif %}
                             </td>
-                            <td class="tag">
+                            <td class="tag" data-label="Categoria">
                                 {% if op['categoria_nombre'] %}
                                     {{ op['categoria_nombre'] }} &middot; {{ op['subcategoria_nombre'] }}
                                 {% else %}
                                     &mdash;
                                 {% endif %}
                             </td>
-                            <td class="monto {{ op['tipo'] }}">
+                            <td class="monto {{ op['tipo'] }}" data-label="Import">
                                 {% if op['tipo'] == 'gasto' %}-{% elif op['tipo'] == 'ingreso' %}+{% endif %}{{ op['monto'] | euros }}
                             </td>
                             <td style="white-space:nowrap;">
                                 <a href="{{ url_for('finanzas_editar_operacion', operacion_id=op['id']) }}" class="btn btn-pequeno">Editar</a>
                                 <form method="POST" action="{{ url_for('finanzas_eliminar_operacion', operacion_id=op['id']) }}"
-                                      style="display:inline;" onsubmit="return confirm('¿Eliminar esta operacion? Se ajustara el saldo de la cuenta.');">
+                                      style="display:inline;" onsubmit="return confirm('Vols eliminar aquesta operacio? S\'ajustara el saldo del compte.');">
                                     <button type="submit" class="btn btn-peligro">Eliminar</button>
                                 </form>
                             </td>
@@ -118,9 +118,9 @@
             </table>
         </div>
         <p style="text-align:center; margin-top:16px;">
-            <a href="{{ url_for('finanzas_operaciones') }}" style="color: var(--green); text-decoration:none;">Ver historial completo &rarr;</a>
+            <a href="{{ url_for('finanzas_operaciones') }}" style="color: var(--green); text-decoration:none;">Veure l'historial complet &rarr;</a>
         </p>
     {% else %}
-        <p class="vacio">Todavia no has registrado ninguna operacion.</p>
+        <p class="vacio">Encara no has registrat cap operacio.</p>
     {% endif %}
 {% endblock %}

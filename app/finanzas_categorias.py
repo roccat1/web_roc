@@ -28,7 +28,7 @@ def finanzas_nueva_categoria():
     tipo = request.form.get("tipo")
 
     if not nombre or tipo not in ("gasto", "ingreso"):
-        flash("Escribe un nombre y elige si es de gasto o de ingreso.")
+        flash("Escriu un nom i tria si es de despesa o d'ingres.")
         return redirect(url_for("finanzas_categorias"))
 
     conn = get_db_connection()
@@ -49,7 +49,7 @@ def finanzas_editar_categoria(categoria_id):
     usuario_id = session["usuario_id"]
     categoria = categoria_del_usuario(categoria_id, usuario_id)
     if categoria is None:
-        flash("Esa categoria no existe.")
+        flash("Aquesta categoria no existeix.")
         return redirect(url_for("finanzas_categorias"))
 
     if request.method == "POST":
@@ -57,7 +57,7 @@ def finanzas_editar_categoria(categoria_id):
         tipo = request.form.get("tipo")
 
         if not nombre or tipo not in ("gasto", "ingreso"):
-            flash("Escribe un nombre y elige si es de gasto o de ingreso.")
+            flash("Escriu un nom i tria si es de despesa o d'ingres.")
             return redirect(url_for("finanzas_editar_categoria", categoria_id=categoria_id))
 
         conn = get_db_connection()
@@ -68,7 +68,7 @@ def finanzas_editar_categoria(categoria_id):
         conn.commit()
         conn.close()
 
-        flash("Categoria actualizada.")
+        flash("Categoria actualitzada.")
         return redirect(url_for("finanzas_categorias"))
 
     return render_template("finanzas/editar_categoria.html", categoria=categoria)
@@ -80,7 +80,7 @@ def finanzas_eliminar_categoria(categoria_id):
     usuario_id = session["usuario_id"]
     categoria = categoria_del_usuario(categoria_id, usuario_id)
     if categoria is None:
-        flash("Esa categoria no existe.")
+        flash("Aquesta categoria no existeix.")
         return redirect(url_for("finanzas_categorias"))
 
     conn = get_db_connection()
@@ -89,7 +89,7 @@ def finanzas_eliminar_categoria(categoria_id):
     ).fetchone()["total"]
 
     if en_uso > 0:
-        flash("No se puede eliminar: hay operaciones que usan esta categoria.")
+        flash("No es pot eliminar: hi ha operacions que fan servir aquesta categoria.")
         conn.close()
         return redirect(url_for("finanzas_categorias"))
 
@@ -111,7 +111,7 @@ def finanzas_nueva_subcategoria():
 
     categoria = categoria_del_usuario(categoria_id, usuario_id) if categoria_id else None
     if categoria is None or not nombre:
-        flash("Elige una categoria y escribe un nombre para la subcategoria.")
+        flash("Tria una categoria i escriu un nom per a la subcategoria.")
         return redirect(url_for("finanzas_categorias"))
 
     conn = get_db_connection()
@@ -140,13 +140,13 @@ def finanzas_editar_subcategoria(subcategoria_id):
     conn.close()
 
     if subcategoria is None or subcategoria["propietario"] != usuario_id:
-        flash("Esa subcategoria no existe.")
+        flash("Aquesta subcategoria no existeix.")
         return redirect(url_for("finanzas_categorias"))
 
     if request.method == "POST":
         nombre = request.form.get("nombre", "").strip()
         if not nombre:
-            flash("Escribe un nombre para la subcategoria.")
+            flash("Escriu un nom per a la subcategoria.")
             return redirect(url_for("finanzas_editar_subcategoria", subcategoria_id=subcategoria_id))
 
         conn = get_db_connection()
@@ -154,7 +154,7 @@ def finanzas_editar_subcategoria(subcategoria_id):
         conn.commit()
         conn.close()
 
-        flash("Subcategoria actualizada.")
+        flash("Subcategoria actualitzada.")
         return redirect(url_for("finanzas_categorias"))
 
     return render_template("finanzas/editar_subcategoria.html", subcategoria=subcategoria)
@@ -173,7 +173,7 @@ def finanzas_eliminar_subcategoria(subcategoria_id):
     """, (subcategoria_id,)).fetchone()
 
     if subcategoria is None or subcategoria["propietario"] != usuario_id:
-        flash("Esa subcategoria no existe.")
+        flash("Aquesta subcategoria no existeix.")
         conn.close()
         return redirect(url_for("finanzas_categorias"))
 
@@ -182,7 +182,7 @@ def finanzas_eliminar_subcategoria(subcategoria_id):
     ).fetchone()["total"]
 
     if en_uso > 0:
-        flash("No se puede eliminar: hay operaciones que usan esta subcategoria.")
+        flash("No es pot eliminar: hi ha operacions que fan servir aquesta subcategoria.")
         conn.close()
         return redirect(url_for("finanzas_categorias"))
 

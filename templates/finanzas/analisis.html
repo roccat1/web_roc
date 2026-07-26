@@ -1,25 +1,25 @@
 {% extends "base.html" %}
-{% block titulo %}Analisis{% endblock %}
+{% block titulo %}Analisi{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Volver a finanzas</a>
+    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Tornar a finances</a>
 
-    <span class="eyebrow">Analisis financiero</span>
-    <h1>Analisis</h1>
-    <p class="subtitle">{{ 'Tus gastos e ingresos por meses, categorias y cuentas' if not hay_datos else 'Mostrando: ' ~ etiqueta_periodo }}</p>
+    <span class="eyebrow">Analisi financera</span>
+    <h1>Analisi</h1>
+    <p class="subtitle">{{ 'Les teves despeses i ingressos per mesos, categories i comptes' if not hay_datos else 'Mostrant: ' ~ etiqueta_periodo }}</p>
 
     {% if not hay_datos %}
         <p class="vacio">
-            Todavia no hay operaciones de gasto o ingreso para analizar.
+            Encara no hi ha operacions de despesa o ingres per analitzar.
             <a href="{{ url_for('finanzas_nueva_operacion') }}" style="color: var(--green);">Registra la primera aqui</a>.
         </p>
     {% else %}
         <form method="GET" class="form-linea filtro-analisis">
             <div class="campo">
-                <label for="anio">Anio</label>
+                <label for="anio">Any</label>
                 <select id="anio" name="anio" onchange="this.form.submit()">
-                    <option value="todos" {{ 'selected' if anio_seleccionado == 'todos' else '' }}>Todos los anios</option>
+                    <option value="todos" {{ 'selected' if anio_seleccionado == 'todos' else '' }}>Tots els anys</option>
                     {% for anio in anios_disponibles %}
                         <option value="{{ anio }}" {{ 'selected' if anio_seleccionado == anio else '' }}>{{ anio }}</option>
                     {% endfor %}
@@ -29,7 +29,7 @@
                 <div class="campo">
                     <label for="mes">Mes</label>
                     <select id="mes" name="mes" onchange="this.form.submit()">
-                        <option value="todos" {{ 'selected' if mes_seleccionado == 'todos' else '' }}>Todo el anio</option>
+                        <option value="todos" {{ 'selected' if mes_seleccionado == 'todos' else '' }}>Tot l'any</option>
                         {% for mes in meses_disponibles %}
                             <option value="{{ mes }}" {{ 'selected' if mes_seleccionado == mes else '' }}>{{ nombres_meses[mes|int - 1] }}</option>
                         {% endfor %}
@@ -41,27 +41,27 @@
 
         <div class="kpis">
             <div class="kpi-card">
-                <span class="etiqueta">Ingresos</span>
+                <span class="etiqueta">Ingressos</span>
                 <div class="cifra ingreso">{{ total_ingresos | euros }}</div>
             </div>
             <div class="kpi-card">
-                <span class="etiqueta">Gastos</span>
+                <span class="etiqueta">Despeses</span>
                 <div class="cifra gasto">{{ total_gastos | euros }}</div>
             </div>
             <div class="kpi-card">
-                <span class="etiqueta">Ahorro</span>
+                <span class="etiqueta">Estalvi</span>
                 <div class="cifra {{ 'positivo' if balance >= 0 else 'negativo' }}">{{ balance | euros }}</div>
             </div>
             <div class="kpi-card">
-                <span class="etiqueta">% Ahorrado</span>
+                <span class="etiqueta">% Estalviat</span>
                 <div class="cifra {{ 'positivo' if ahorro_pct >= 0 else 'negativo' }}">{{ "%.1f"|format(ahorro_pct) }}%</div>
             </div>
         </div>
 
         <div class="bloque-analisis">
-            <div class="titulo-bloque">Ingresos y gastos por mes</div>
+            <div class="titulo-bloque">Ingressos i despeses per mes</div>
             {% if mes_seleccionado != 'todos' %}
-                <p class="tag" style="margin: -4px 0 12px;">Este grafico siempre muestra el anio completo, para poder comparar meses.</p>
+                <p class="tag" style="margin: -4px 0 12px;">Aquest grafic sempre mostra l'any complet, per poder comparar mesos.</p>
             {% endif %}
             <div class="grafico-wrap">
                 <canvas id="grafico-meses"></canvas>
@@ -70,22 +70,22 @@
 
         {% if categorias_gasto or categorias_ingreso %}
             <div class="bloque-analisis">
-                <div class="titulo-bloque">Reparto por categoria</div>
+                <div class="titulo-bloque">Repartiment per categoria</div>
                 <div class="graficos-categorias">
                     <div class="grafico-wrap">
-                        <div class="titulo-mini">Gastos</div>
+                        <div class="titulo-mini">Despeses</div>
                         {% if categorias_gasto %}
                             <canvas id="grafico-cat-gasto"></canvas>
                         {% else %}
-                            <p class="vacio">Sin gastos en este periodo.</p>
+                            <p class="vacio">Sense despeses en aquest periode.</p>
                         {% endif %}
                     </div>
                     <div class="grafico-wrap">
-                        <div class="titulo-mini">Ingresos</div>
+                        <div class="titulo-mini">Ingressos</div>
                         {% if categorias_ingreso %}
                             <canvas id="grafico-cat-ingreso"></canvas>
                         {% else %}
-                            <p class="vacio">Sin ingresos en este periodo.</p>
+                            <p class="vacio">Sense ingressos en aquest periode.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -93,7 +93,7 @@
         {% endif %}
 
         <div class="bloque-analisis">
-            <div class="titulo-bloque">Desglose de gastos</div>
+            <div class="titulo-bloque">Desglossament de despeses</div>
             {% if categorias_gasto %}
                 <div class="lista-analisis">
                     {% for cat in categorias_gasto %}
@@ -122,12 +122,12 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="vacio">Sin gastos en este periodo.</p>
+                <p class="vacio">Sense despeses en aquest periode.</p>
             {% endif %}
         </div>
 
         <div class="bloque-analisis">
-            <div class="titulo-bloque">Desglose de ingresos</div>
+            <div class="titulo-bloque">Desglossament d'ingressos</div>
             {% if categorias_ingreso %}
                 <div class="lista-analisis">
                     {% for cat in categorias_ingreso %}
@@ -156,12 +156,12 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="vacio">Sin ingresos en este periodo.</p>
+                <p class="vacio">Sense ingressos en aquest periode.</p>
             {% endif %}
         </div>
 
         <div class="bloque-analisis">
-            <div class="titulo-bloque">Gasto por cuenta</div>
+            <div class="titulo-bloque">Despesa per compte</div>
             {% if gasto_por_cuenta %}
                 <div class="lista-analisis">
                     {% for cuenta in gasto_por_cuenta %}
@@ -180,20 +180,20 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="vacio">Sin gastos en este periodo.</p>
+                <p class="vacio">Sense despeses en aquest periode.</p>
             {% endif %}
         </div>
 
         {% if mes_seleccionado == 'todos' %}
             <p class="vacio" style="font-size:12px;">
-                Gasto medio mensual en el periodo: <strong style="color: var(--text);">{{ gasto_medio_mensual | euros }}</strong>
+                Despesa mitjana mensual en el periode: <strong style="color: var(--text);">{{ gasto_medio_mensual | euros }}</strong>
             </p>
         {% endif %}
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
         <script>
-            // Colores que coinciden con las variables CSS del proyecto
-            // (Chart.js no puede leer variables CSS directamente).
+            // Colors que coincideixen amb les variables CSS del projecte
+            // (Chart.js no pot llegir variables CSS directament).
             const colorTexto = '#edf0f3';
             const colorTextoMuted = '#8993a1';
             const colorBorde = '#2a323c';
@@ -203,20 +203,20 @@
 
             Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
 
-            // --- Grafico de barras: ingresos vs gastos por mes ---
+            // --- Grafic de barres: ingressos vs despeses per mes ---
             new Chart(document.getElementById('grafico-meses'), {
                 type: 'bar',
                 data: {
                     labels: {{ meses | map(attribute='nombre') | list | tojson }},
                     datasets: [
                         {
-                            label: 'Ingresos',
+                            label: 'Ingressos',
                             data: {{ meses | map(attribute='ingreso') | list | tojson }},
                             backgroundColor: colorVerde,
                             borderRadius: 4,
                         },
                         {
-                            label: 'Gastos',
+                            label: 'Despeses',
                             data: {{ meses | map(attribute='gasto') | list | tojson }},
                             backgroundColor: colorRojo,
                             borderRadius: 4,

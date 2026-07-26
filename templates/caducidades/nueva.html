@@ -1,27 +1,27 @@
 {% extends "base.html" %}
-{% block titulo %}Nuevo registro{% endblock %}
+{% block titulo %}Nou registre{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('caducidades') }}" class="volver">&larr; Volver a caducidades</a>
+    <a href="{{ url_for('caducidades') }}" class="volver">&larr; Tornar a caducitats</a>
 
     <div class="pin-row">
         <span></span><span></span><span></span><span></span><span></span>
     </div>
-    <span class="eyebrow">Nuevo</span>
-    <h1>Nueva fecha de caducidad</h1>
-    <p class="subtitle">Documentos, coche, seguros... lo que quieras controlar</p>
+    <span class="eyebrow">Nou</span>
+    <h1>Nova data de caducitat</h1>
+    <p class="subtitle">Documents, cotxe, assegurances... el que vulguis controlar</p>
 
     <div class="card">
         <form method="POST">
             <div class="campo">
-                <label for="nombre">Nombre</label>
-                <input type="text" id="nombre" name="nombre" placeholder="Ej: ITV del coche" required autofocus>
+                <label for="nombre">Nom</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ex: ITV del cotxe" required autofocus>
             </div>
 
             <div class="campo">
                 <label for="categoria">Categoria</label>
-                <input type="text" id="categoria" name="categoria" list="lista-categorias" placeholder="Ej: Vehiculo">
+                <input type="text" id="categoria" name="categoria" list="lista-categorias" placeholder="Ex: Vehicle">
                 <datalist id="lista-categorias">
                     {% for cat in categorias_sugeridas %}
                         <option value="{{ cat }}">
@@ -30,30 +30,30 @@
             </div>
 
             <div class="campo">
-                <label for="fecha_caducidad">Fecha de caducidad</label>
+                <label for="fecha_caducidad">Data de caducitat</label>
                 <input type="date" id="fecha_caducidad" name="fecha_caducidad" value="{{ hoy }}" required>
             </div>
 
             <div class="campo">
-                <label for="aviso_dias">Avisar con antelacion (dias)</label>
+                <label for="aviso_dias">Avisar amb antelacio (dies)</label>
                 <input type="number" id="aviso_dias" name="aviso_dias" value="30" min="0">
             </div>
 
             <div class="campo">
-                <label for="dias_revalidacion">Revalidar automaticamente cada (dias)</label>
-                <input type="number" id="dias_revalidacion" name="dias_revalidacion" min="1" placeholder="Ej: 365 (opcional)">
+                <label for="dias_revalidacion">Revalidar automaticament cada (dies)</label>
+                <input type="number" id="dias_revalidacion" name="dias_revalidacion" min="1" placeholder="Ex: 365 (opcional)">
                 <p class="tag" style="margin: 6px 0 0;">
-                    Si lo rellenas, en el listado apareceran un boton "Revalidar" que
-                    pone la fecha en hoy + estos dias, sin tener que editarla a mano.
+                    Si l'omples, al llistat apareixera un boto "Revalidar" que
+                    posa la data a avui + aquests dies, sense haver-la d'editar a ma.
                 </p>
             </div>
 
             <div class="campo">
-                <label for="notas">Notas (opcional)</label>
-                <input type="text" id="notas" name="notas" placeholder="Ej: Llevar a revisar a Talleres Perez">
+                <label for="notas">Notes (opcional)</label>
+                <input type="text" id="notas" name="notas" placeholder="Ex: Portar a revisar al Taller Perez">
             </div>
 
-            <button type="submit">Guardar</button>
+            <button type="submit">Desar</button>
         </form>
     </div>
 {% endblock %}

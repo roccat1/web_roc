@@ -17,7 +17,7 @@ def login_requerido(vista):
     @wraps(vista)
     def envoltura(*args, **kwargs):
         if "usuario_id" not in session:
-            flash("Debes iniciar sesion para ver esa pagina.")
+            flash("Has d'iniciar sessio per veure aquesta pagina.")
             return redirect(url_for("login"))
         return vista(*args, **kwargs)
     return envoltura

@@ -1,35 +1,35 @@
 {% extends "base.html" %}
-{% block titulo %}Cuentas{% endblock %}
+{% block titulo %}Comptes{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Volver a finanzas</a>
+    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Tornar a finances</a>
 
-    <span class="eyebrow">Gestion</span>
-    <h1>Cuentas</h1>
-    <p class="subtitle">Crea cuentas y define cual se usa por defecto en cada tipo de operacion</p>
+    <span class="eyebrow">Gestio</span>
+    <h1>Comptes</h1>
+    <p class="subtitle">Crea comptes i defineix quin s'utilitza per defecte a cada tipus d'operacio</p>
 
     {% if cuentas %}
         <div class="tabla-wrap">
-            <table>
+            <table class="tabla-responsive">
                 <thead>
-                    <tr><th>Cuenta</th><th>Saldo</th><th></th></tr>
+                    <tr><th>Compte</th><th>Saldo</th><th></th></tr>
                 </thead>
                 <tbody>
                     {% for cuenta in cuentas %}
                         <tr>
-                            <td>
+                            <td data-label="Compte">
                                 <span class="led {{ 'verde' if cuenta['saldo'] >= 0 else 'rojo' }}"></span>
                                 {{ cuenta['nombre'] }}
                                 {% if cuenta['es_ahorro'] %}
-                                    <span class="badge" style="margin-left:6px;">Ahorros</span>
+                                    <span class="badge" style="margin-left:6px;">Estalvis</span>
                                 {% endif %}
                             </td>
-                            <td class="monto {{ 'gasto' if cuenta['saldo'] < 0 else 'ingreso' }}">{{ cuenta['saldo'] | euros }}</td>
+                            <td class="monto {{ 'gasto' if cuenta['saldo'] < 0 else 'ingreso' }}" data-label="Saldo">{{ cuenta['saldo'] | euros }}</td>
                             <td style="text-align:right; white-space:nowrap;">
                                 <a href="{{ url_for('finanzas_editar_cuenta', cuenta_id=cuenta['id']) }}" class="btn btn-pequeno">Editar</a>
                                 <form method="POST" action="{{ url_for('finanzas_eliminar_cuenta', cuenta_id=cuenta['id']) }}"
-                                      style="display:inline;" onsubmit="return confirm('¿Eliminar la cuenta {{ cuenta['nombre'] }}?');">
+                                      style="display:inline;" onsubmit="return confirm('Vols eliminar el compte {{ cuenta['nombre'] }}?');">
                                     <button type="submit" class="btn btn-peligro">Eliminar</button>
                                 </form>
                             </td>
@@ -39,15 +39,15 @@
             </table>
         </div>
     {% else %}
-        <p class="vacio">Aun no tienes ninguna cuenta.</p>
+        <p class="vacio">Encara no tens cap compte.</p>
     {% endif %}
 
     <div class="card" style="margin-top:24px;">
-        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Nueva cuenta</h2>
+        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Compte nou</h2>
         <form method="POST" action="{{ url_for('finanzas_nueva_cuenta') }}" class="form-linea">
             <div class="campo">
-                <label for="nombre">Nombre</label>
-                <input type="text" id="nombre" name="nombre" placeholder="Ej: Cuenta corriente" required>
+                <label for="nombre">Nom</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ex: Compte corrent" required>
             </div>
             <div class="campo">
                 <label for="saldo_inicial">Saldo inicial (€)</label>
@@ -56,48 +56,48 @@
             <div class="campo">
                 <label for="es_ahorro" style="display:flex; align-items:center; gap:6px; font-weight:normal;">
                     <input type="checkbox" id="es_ahorro" name="es_ahorro" style="width:auto;">
-                    Cuenta de ahorros (aparte del saldo total)
+                    Compte d'estalvis (a part del saldo total)
                 </label>
             </div>
-            <button type="submit">Crear cuenta</button>
+            <button type="submit">Crear compte</button>
         </form>
     </div>
 
     {% if cuentas %}
         <div class="card" style="margin-top:20px;">
-            <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Cuentas predefinidas</h2>
+            <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Comptes predefinits</h2>
             <p style="color: var(--text-muted); font-size:13px; margin:-8px 0 16px;">
-                Se rellenan automaticamente al crear una operacion nueva (siempre se pueden cambiar a mano).
+                Es omplen automaticament en crear una operacio nova (sempre es poden canviar a ma).
             </p>
             <form method="POST" action="{{ url_for('finanzas_guardar_predefinidas') }}">
                 <div class="campo">
-                    <label for="predefinida_gasto">Para gastos</label>
+                    <label for="predefinida_gasto">Per a despeses</label>
                     <select id="predefinida_gasto" name="predefinida_gasto">
-                        <option value="">— Sin definir —</option>
+                        <option value="">— Sense definir —</option>
                         {% for cuenta in cuentas %}
                             <option value="{{ cuenta['id'] }}" {{ 'selected' if predefinidas.get('gasto') == cuenta['id'] else '' }}>{{ cuenta['nombre'] }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="campo">
-                    <label for="predefinida_ingreso">Para ingresos</label>
+                    <label for="predefinida_ingreso">Per a ingressos</label>
                     <select id="predefinida_ingreso" name="predefinida_ingreso">
-                        <option value="">— Sin definir —</option>
+                        <option value="">— Sense definir —</option>
                         {% for cuenta in cuentas %}
                             <option value="{{ cuenta['id'] }}" {{ 'selected' if predefinidas.get('ingreso') == cuenta['id'] else '' }}>{{ cuenta['nombre'] }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="campo">
-                    <label for="predefinida_transferencia">Para transferencias (cuenta origen)</label>
+                    <label for="predefinida_transferencia">Per a transferencies (compte origen)</label>
                     <select id="predefinida_transferencia" name="predefinida_transferencia">
-                        <option value="">— Sin definir —</option>
+                        <option value="">— Sense definir —</option>
                         {% for cuenta in cuentas %}
                             <option value="{{ cuenta['id'] }}" {{ 'selected' if predefinidas.get('transferencia') == cuenta['id'] else '' }}>{{ cuenta['nombre'] }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit">Guardar predefinidas</button>
+                <button type="submit">Desar predefinits</button>
             </form>
         </div>
     {% endif %}

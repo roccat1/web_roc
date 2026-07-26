@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block titulo %}Editar cuenta{% endblock %}
+{% block titulo %}Editar compte{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('finanzas_cuentas') }}" class="volver">&larr; Volver a cuentas</a>
+    <a href="{{ url_for('finanzas_cuentas') }}" class="volver">&larr; Tornar a comptes</a>
 
     <span class="eyebrow">Editar</span>
     <h1>{{ cuenta['nombre'] }}</h1>
@@ -11,7 +11,7 @@
     <div class="card">
         <form method="POST">
             <div class="campo">
-                <label for="nombre">Nombre</label>
+                <label for="nombre">Nom</label>
                 <input type="text" id="nombre" name="nombre" value="{{ cuenta['nombre'] }}" required>
             </div>
             <div class="campo">
@@ -21,10 +21,10 @@
             <div class="campo">
                 <label for="es_ahorro" style="display:flex; align-items:center; gap:6px; font-weight:normal;">
                     <input type="checkbox" id="es_ahorro" name="es_ahorro" style="width:auto;" {{ 'checked' if cuenta['es_ahorro'] else '' }}>
-                    Cuenta de ahorros (aparte del saldo total)
+                    Compte d'estalvis (a part del saldo total)
                 </label>
             </div>
-            <button type="submit">Guardar cambios</button>
+            <button type="submit">Desar els canvis</button>
         </form>
     </div>
 {% endblock %}

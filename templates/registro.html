@@ -1,30 +1,30 @@
 {% extends "base.html" %}
-{% block titulo %}Registro{% endblock %}
+{% block titulo %}Registre{% endblock %}
 
 {% block contenido %}
     <div class="pin-row">
         <span></span><span></span><span></span><span></span><span></span>
     </div>
 
-    <span class="eyebrow">Nuevo usuario</span>
-    <h1>Crear cuenta</h1>
-    <p class="subtitle">Elige un usuario y una contrasena</p>
+    <span class="eyebrow">Usuari nou</span>
+    <h1>Crear compte</h1>
+    <p class="subtitle">Tria un usuari i una contrasenya</p>
 
     <div class="card">
         <form method="POST">
             <div class="campo">
-                <label for="username">Usuario</label>
+                <label for="username">Usuari</label>
                 <input type="text" id="username" name="username" required autofocus>
             </div>
 
             <div class="campo">
-                <label for="password">Contrasena</label>
+                <label for="password">Contrasenya</label>
                 <input type="password" id="password" name="password" required>
             </div>
 
-            <button type="submit">Registrarme</button>
+            <button type="submit">Registrar-me</button>
         </form>
     </div>
 
-    <p class="ayuda">Si ya tienes cuenta, <a href="{{ url_for('login') }}">inicia sesion aqui</a>.</p>
+    <p class="ayuda">Si ja tens compte, <a href="{{ url_for('login') }}">inicia sessio aqui</a>.</p>
 {% endblock %}

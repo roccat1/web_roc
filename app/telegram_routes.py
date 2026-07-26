@@ -43,5 +43,5 @@ def telegram_generar():
 @login_requerido
 def telegram_desvincular():
     desvincular_telegram(session["usuario_id"])
-    flash("Cuenta de Telegram desvinculada.")
+    flash("Compte de Telegram desvinculat.")
     return redirect(url_for("telegram"))

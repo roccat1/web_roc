@@ -1220,14 +1220,14 @@ code {
 }
 
 .mini-mas {
-    font-size: 8px;
+    font-size: 10px;
     color: var(--text-muted);
     font-family: var(--font-mono);
 }
 
 @media (max-width: 480px) {
     .calendario-dia { min-height: 38px; padding: 3px; }
-    .calendario-cabecera-dia { font-size: 9px; }
+    .calendario-cabecera-dia { font-size: 10px; }
 }
 
 /* -------------------- Estados de eventos -------------------- */
@@ -1282,8 +1282,19 @@ code {
 .evento-acciones {
     display: flex;
     gap: 6px;
-    flex-shrink: 0;
-    white-space: nowrap;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+@media (max-width: 480px) {
+    .evento-fila {
+        flex-wrap: wrap;
+    }
+    .evento-acciones {
+        width: 100%;
+        justify-content: flex-start;
+        margin-left: 21px; /* alineado con evento-info, tras el punto de categoria */
+    }
 }
 
 /* -------------------- Selector de color (categorias) -------------------- */
@@ -1371,4 +1382,370 @@ code {
 .categoria-calendario-fila .cat-dot {
     width: 12px;
     height: 12px;
+}
+
+/* -------------------- Selector de recordatoris (checkboxes) -------------------- */
+
+.selector-recordatoris {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.opcion-recordatori {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.opcion-recordatori input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--red);
+    cursor: pointer;
+}
+
+.opcion-recordatori label {
+    text-transform: none;
+    letter-spacing: normal;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+}
+
+/* -------------------- Vista setmanal -------------------- */
+
+.semana-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin: 20px 0 32px;
+}
+
+@media (max-width: 700px) {
+    .semana-grid { grid-template-columns: 1fr; }
+}
+
+.semana-dia {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 90px;
+}
+
+.semana-dia.hoy {
+    border-color: var(--red);
+}
+
+.semana-dia-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    text-decoration: none;
+    font-family: var(--font-mono);
+}
+
+.semana-dia-nombre {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.semana-dia-numero {
+    font-size: 14px;
+    color: var(--text);
+}
+
+.semana-dia.hoy .semana-dia-numero {
+    color: var(--red-bright);
+    font-weight: 700;
+}
+
+.semana-dia-eventos {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.semana-evento {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    font-size: 12px;
+    color: var(--text);
+    overflow: hidden;
+}
+
+.semana-evento .cat-dot {
+    flex-shrink: 0;
+}
+
+.semana-evento-hora {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.semana-evento-titulo {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.semana-dia-buit {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+/* ============================================================
+   MOBILE FIRST - ajustes de area tactil, densidad y navegacion
+   para pantallas de telefono. Todo lo de aqui abajo son mejoras
+   incrementales sobre los componentes ya definidos arriba, no
+   nuevos tokens visuales.
+   ============================================================ */
+
+/* -------------------- Area tactil minima -------------------- */
+
+@media (max-width: 600px) {
+    .btn, nav a, .btn-pequeno, .btn-peligro, .btn-exito {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .btn-peligro, .btn-exito {
+        min-height: 34px;
+    }
+
+    /* Separacion minima entre botones/enlaces que van pegados, para
+       que un dedo no toque el de al lado por error. */
+    .evento-acciones, .header-finanzas .acciones, .acciones-categoria {
+        gap: 8px;
+    }
+}
+
+/* -------------------- Densidad en pantallas muy estrechas -------------------- */
+
+@media (max-width: 380px) {
+    body {
+        padding: 20px 12px 56px;
+    }
+
+    .card {
+        padding: 18px 16px;
+    }
+
+    main {
+        max-width: 100%;
+    }
+}
+
+/* -------------------- Tira de acciones deslizable -------------------- */
+/* header-finanzas .acciones puede tener bastantes botones (el
+   calendari, por ejemplo). En vez de que se apilen en 2-3 filas
+   centradas, en movil se convierte en una unica fila que se
+   desliza en horizontal (patron habitual en apps moviles). */
+
+@media (max-width: 600px) {
+    .header-finanzas .acciones {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        margin: 0 -16px;
+        padding: 2px 16px 6px;
+    }
+
+    .header-finanzas .acciones::-webkit-scrollbar {
+        display: none;
+    }
+
+    .header-finanzas .acciones .btn {
+        flex-shrink: 0;
+    }
+}
+
+/* -------------------- Tablas responsivas (finances) -------------------- */
+/* Por debajo del breakpoint, cada <tr> pasa a ser una tarjeta y cada
+   <td> una linea "etiqueta: valor" (la etiqueta sale del atributo
+   data-label del propio <td>, puesto en la plantilla). Evita el
+   scroll horizontal para ver el importe o el boton de editar. */
+
+@media (max-width: 640px) {
+    table.tabla-responsive thead {
+        display: none;
+    }
+
+    table.tabla-responsive, table.tabla-responsive tbody,
+    table.tabla-responsive tr, table.tabla-responsive td {
+        display: block;
+        width: 100%;
+    }
+
+    table.tabla-responsive tr {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 4px 14px;
+        margin-bottom: 10px;
+    }
+
+    table.tabla-responsive td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px dashed var(--border);
+        text-align: right;
+    }
+
+    table.tabla-responsive td:last-child {
+        border-bottom: none;
+    }
+
+    table.tabla-responsive td::before {
+        content: attr(data-label);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        text-align: left;
+        flex-shrink: 0;
+    }
+
+    /* El importe es el dato mas importante de la fila: que destaque. */
+    table.tabla-responsive td[data-label="Import"] {
+        font-size: 16px;
+        font-weight: 700;
+    }
+}
+
+/* -------------------- Selector de categorias (chips) -------------------- */
+/* Sustituye al <select multiple>, que en movil (sobre todo iOS) es
+   incomodo de usar con el dedo. Reutiliza el mismo patron visual que
+   ya usan los checkboxes de "avisar amb antelacio". */
+
+.selector-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.selector-chips .chip {
+    position: relative;
+}
+
+.selector-chips input[type="checkbox"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.selector-chips .chip-etiqueta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.selector-chips input[type="checkbox"]:checked + .chip-etiqueta {
+    border-color: var(--red);
+    color: var(--text);
+    background: rgba(199, 30, 74, 0.12);
+}
+
+.selector-chips input[type="checkbox"]:focus-visible + .chip-etiqueta {
+    outline: 2px solid var(--red-bright);
+    outline-offset: 1px;
+}
+
+/* -------------------- Barra de navegacion inferior -------------------- */
+/* Solo aparece con sesion iniciada y en pantallas de telefono: acceso
+   directo con el pulgar a las secciones principales, sin abrir el
+   menu hamburguesa de arriba (que sigue teniendo el resto de enlaces:
+   Caca, Tancar sessio...). */
+
+.bottom-nav {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    body.con-bottom-nav {
+        padding-bottom: 90px;
+    }
+
+    .bottom-nav {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 40;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
+        justify-content: space-around;
+    }
+
+    .bottom-nav a {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-height: 48px;
+        padding: 6px 2px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        transition: color 0.15s;
+    }
+
+    .bottom-nav a svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+    }
+
+    .bottom-nav a.activo {
+        color: var(--red-bright);
+    }
+
+    .bottom-nav a:active {
+        background: rgba(199, 30, 74, 0.12);
+    }
 }

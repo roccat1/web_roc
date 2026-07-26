@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block titulo %}Calendari - {{ fecha_formateada }}{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Tornar a la vista mensual</a>
+
+    <span class="eyebrow">{{ 'Avui' if es_hoy else 'Dia' }}</span>
+    <h1 style="text-align:center;">{{ fecha_formateada }}</h1>
+
+    <div class="header-finanzas" style="margin-top:20px;">
+        <div class="acciones">
+            <a href="{{ url_for('calendario_nuevo', fecha=fecha) }}" class="btn btn-primario">+ Afegir esdeveniment aquest dia</a>
+        </div>
+    </div>
+
+    {% if eventos %}
+        <div class="card" style="padding: 8px 20px;">
+            {% for evento in eventos %}
+                <div class="evento-fila">
+                    <span class="cat-dot cat-{{ evento.categoria_color }}"></span>
+                    <div class="evento-info">
+                        <div class="evento-titulo">
+                            {{ evento.titulo }}
+                            {% if evento.repetir != 'ninguna' %}<span class="tag">&#8635; {{ {'diaria': 'diaria', 'semanal': 'setmanal', 'mensual': 'mensual', 'anual': 'anual'}[evento.repetir] }}</span>{% endif %}
+                            {% if evento.es_excepcio %}<span class="tag">editat nomes aquest dia</span>{% endif %}
+                        </div>
+                        <div class="evento-meta">
+                            {% if evento.todo_el_dia %}Tot el dia{% else %}{{ evento.hora }}{% endif %}
+                            &middot; <span class="badge">{{ evento.categoria_nombre }}</span>
+                            {% for extra in evento.categorias_extra %}
+                                <span class="badge-cat"><span class="cat-dot cat-{{ extra.color }}"></span>{{ extra.nombre }}</span>
+                            {% endfor %}
+                        </div>
+                        {% if evento.lugar %}<div class="evento-meta">&#128205; {{ evento.lugar }}</div>{% endif %}
+                        {% if evento.descripcion %}<div class="evento-meta">{{ evento.descripcion }}</div>{% endif %}
+                    </div>
+                    <div class="evento-acciones">
+                        {% if evento.repetir == 'ninguna' %}
+                            <a href="{{ url_for('calendario_editar', evento_id=evento.id) }}" class="btn btn-pequeno">Editar</a>
+                            <form method="POST" action="{{ url_for('calendario_eliminar', evento_id=evento.id) }}"
+                                  style="display:inline;" onsubmit="return confirm('Vols eliminar {{ evento.titulo }}?');">
+                                <button type="submit" class="btn btn-peligro">Eliminar</button>
+                            </form>
+                        {% else %}
+                            <a href="{{ url_for('calendario_ocurrencia_editar', evento_id=evento.id, fecha=evento.fecha_ocurrencia) }}" class="btn btn-pequeno">Editar nomes avui</a>
+                            <a href="{{ url_for('calendario_editar', evento_id=evento.id) }}" class="btn btn-pequeno">Editar tota la serie</a>
+                            {% if evento.es_excepcio %}
+                                <form method="POST" action="{{ url_for('calendario_ocurrencia_restaurar', evento_id=evento.id, fecha=evento.fecha_ocurrencia) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-pequeno">Desfer el canvi d'avui</button>
+                                </form>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('calendario_ocurrencia_cancelar', evento_id=evento.id, fecha=evento.fecha_ocurrencia) }}"
+                                      style="display:inline;" onsubmit="return confirm('Vols cancel·lar nomes l\'ocurrencia d\'avui de {{ evento.titulo }}? La resta de la serie no es tocara.');">
+                                    <button type="submit" class="btn btn-peligro">Cancel·lar nomes avui</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="vacio">
+            No hi ha cap esdeveniment aquest dia.
+            <a href="{{ url_for('calendario_nuevo', fecha=fecha) }}" style="color: var(--green);">Afegeix-ne un aqui</a>.
+        </p>
+    {% endif %}
+{% endblock %}

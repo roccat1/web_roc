@@ -6,43 +6,43 @@
     <div class="pin-row">
         <span></span><span></span><span></span><span></span><span></span>
     </div>
-    <span class="eyebrow">Seguimiento</span>
-    <h1 style="text-align:center;">Registro de caca</h1>
-    <p class="subtitle">Lleva la cuenta y comparala con tus amigos</p>
+    <span class="eyebrow">Seguiment</span>
+    <h1 style="text-align:center;">Registre de caca</h1>
+    <p class="subtitle">Porta el compte i compara't amb els teus amics</p>
 
     <div class="header-finanzas" style="margin-top:20px;">
         <div class="acciones">
-            <a href="{{ url_for('caca_estadisticas') }}" class="btn btn-primario">Ver estadisticas</a>
+            <a href="{{ url_for('caca_estadisticas') }}" class="btn btn-primario">Veure estadistiques</a>
         </div>
     </div>
 
     <div class="card" style="text-align:center;">
         <div id="estado-inicial">
             <button type="button" id="btn-registrar-ahora" class="btn btn-primario" style="font-size:16px; padding:22px; width:100%;">
-                &#128169; Registrar ahora
+                &#128169; Registrar ara
             </button>
         </div>
 
         <div id="estado-confirmar" style="display:none;">
-            <p style="color: var(--text-muted); margin-top:0;">Confirma la hora</p>
+            <p style="color: var(--text-muted); margin-top:0;">Confirma l'hora</p>
             <p style="font-family: var(--font-mono); font-size:32px; color: var(--green); margin: 0 0 16px;" id="hora-actual-texto"></p>
             <div style="display:flex; gap:8px; justify-content:center;">
-                <button type="button" id="btn-cancelar" class="btn btn-pequeno">Cancelar</button>
-                <button type="button" id="btn-confirmar" class="btn btn-primario">Si, guardar</button>
+                <button type="button" id="btn-cancelar" class="btn btn-pequeno">Cancel·lar</button>
+                <button type="button" id="btn-confirmar" class="btn btn-primario">Si, desar</button>
             </div>
         </div>
 
         <div id="estado-exito" style="display:none;">
             <p style="font-size:36px; margin:0;">&#9989;</p>
-            <p style="color: var(--green); margin-bottom:0;">Guardado correctamente</p>
+            <p style="color: var(--green); margin-bottom:0;">Desat correctament</p>
         </div>
     </div>
 
     <div class="card" style="margin-top:20px;">
-        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Te has olvidado de registrarlo?</h2>
+        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">T'has oblidat de registrar-ho?</h2>
         <form id="formulario-manual" class="form-linea">
             <div class="campo">
-                <label for="fecha_hora">Fecha y hora</label>
+                <label for="fecha_hora">Data i hora</label>
                 <input type="datetime-local" id="fecha_hora" name="fecha_hora" required>
             </div>
             <button type="submit" class="btn-submit">Registrar</button>
@@ -57,7 +57,7 @@
         <div class="tabla-wrap">
             <table>
                 <thead>
-                    <tr><th>Fecha</th><th>Hora</th><th></th></tr>
+                    <tr><th>Data</th><th>Hora</th><th></th></tr>
                 </thead>
                 <tbody>
                     {% for r in registros %}
@@ -66,7 +66,7 @@
                             <td>{{ r['fecha_hora'][11:16] }}</td>
                             <td style="text-align:right;">
                                 <form method="POST" action="{{ url_for('caca_eliminar', registro_id=r['id']) }}"
-                                      onsubmit="return confirm('Eliminar este registro?');">
+                                      onsubmit="return confirm('Vols eliminar aquest registre?');">
                                     <button type="submit" class="btn btn-peligro">Eliminar</button>
                                 </form>
                             </td>
@@ -76,15 +76,15 @@
             </table>
         </div>
     {% else %}
-        <p class="vacio">Todavia no has registrado nada.</p>
+        <p class="vacio">Encara no has registrat res.</p>
     {% endif %}
 
     <script>
-        // Igual que en el proyecto original (poop.js): el registro se
-        // manda con fetch() en vez de con un <form> clasico, para poder
-        // mostrar el paso de "confirmar" y el de "guardado" sin recargar
-        // la pagina hasta el final. La hora se calcula en el propio
-        // navegador y se manda ya lista como texto.
+        // Igual que al projecte original (poop.js): el registre s'envia
+        // amb fetch() en lloc d'un <form> classic, per poder mostrar el
+        // pas de "confirmar" i el de "desat" sense recarregar la pagina
+        // fins al final. L'hora es calcula al mateix navegador i s'envia
+        // ja preparada com a text.
 
         const URL_CACA = "{{ url_for('caca') }}";
 
@@ -99,9 +99,9 @@
         const formularioManual = document.getElementById('formulario-manual');
         const inputFecha = document.getElementById('fecha_hora');
 
-        // Convierte una fecha en el texto 'AAAA-MM-DDTHH:MM' que
-        // representa su hora LOCAL (restamos el desfase de zona horaria
-        // antes de usar toISOString, que si no siempre devuelve UTC).
+        // Converteix una data al text 'AAAA-MM-DDTHH:MM' que representa
+        // la seva hora LOCAL (restem el desfasament de fus horari abans
+        // d'utilitzar toISOString, que si no sempre retorna UTC).
         function horaLocalComoTexto(fecha) {
             const copia = new Date(fecha);
             copia.setMinutes(copia.getMinutes() - copia.getTimezoneOffset());
@@ -119,12 +119,12 @@
                         window.location.href = URL_CACA;
                     } else {
                         alTerminar(false);
-                        alert('Error: no se ha podido guardar el registro.');
+                        alert('Error: no s\'ha pogut desar el registre.');
                     }
                 })
                 .catch(() => {
                     alTerminar(false);
-                    alert('Error: ha habido un problema con la conexion.');
+                    alert('Error: hi ha hagut un problema amb la connexio.');
                 });
         }
 
@@ -152,7 +152,7 @@
             });
         });
 
-        // El formulario manual empieza relleno con la hora actual.
+        // El formulari manual comenca omplert amb l'hora actual.
         inputFecha.value = horaLocalComoTexto(new Date());
 
         formularioManual.addEventListener('submit', (evento) => {
@@ -163,7 +163,7 @@
 
             guardarRegistro(inputFecha.value, (exito) => {
                 if (exito) {
-                    boton.textContent = 'Guardado!';
+                    boton.textContent = 'Desat!';
                 } else {
                     boton.textContent = textoOriginal;
                     boton.disabled = false;

@@ -21,15 +21,15 @@ def calcular_estado_caducidad(fecha_caducidad, aviso_dias):
     """
     hoy = date.today()
     dias = (fecha_caducidad - hoy).days
-    palabra = "dia" if abs(dias) == 1 else "dias"
+    palabra = "dia" if abs(dias) == 1 else "dies"
 
     if dias < 0:
-        return {"estado": "caducado", "dias": dias, "texto": f"Caduco hace {abs(dias)} {palabra}"}
+        return {"estado": "caducado", "dias": dias, "texto": f"Va caducar fa {abs(dias)} {palabra}"}
     if dias == 0:
-        return {"estado": "proximo", "dias": dias, "texto": "Caduca hoy"}
+        return {"estado": "proximo", "dias": dias, "texto": "Caduca avui"}
     if dias <= aviso_dias:
-        return {"estado": "proximo", "dias": dias, "texto": f"Caduca en {dias} {palabra}"}
-    return {"estado": "vigente", "dias": dias, "texto": f"Caduca en {dias} {palabra}"}
+        return {"estado": "proximo", "dias": dias, "texto": f"Caduca d'aqui a {dias} {palabra}"}
+    return {"estado": "vigente", "dias": dias, "texto": f"Caduca d'aqui a {dias} {palabra}"}
 
 
 def obtener_caducidades(usuario_id):
@@ -91,7 +91,7 @@ def validar_formulario_caducidad(form):
     """Valida y devuelve los datos del formulario de crear/editar una
     caducidad. Devuelve (datos, errores)."""
     nombre = form.get("nombre", "").strip()
-    categoria = form.get("categoria", "").strip() or "Otros"
+    categoria = form.get("categoria", "").strip() or "Altres"
     fecha_texto = form.get("fecha_caducidad", "").strip()
     aviso_dias = form.get("aviso_dias", type=int)
     dias_revalidacion = form.get("dias_revalidacion", type=int)
@@ -99,15 +99,15 @@ def validar_formulario_caducidad(form):
 
     errores = []
     if not nombre:
-        errores.append("Escribe un nombre.")
+        errores.append("Escriu un nom.")
 
     if not fecha_texto:
-        errores.append("Elige una fecha de caducidad.")
+        errores.append("Tria una data de caducitat.")
     else:
         try:
             date.fromisoformat(fecha_texto)
         except ValueError:
-            errores.append("La fecha no es valida.")
+            errores.append("La data no es valida.")
 
     if aviso_dias is None or aviso_dias < 0:
         aviso_dias = 30

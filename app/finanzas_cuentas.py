@@ -33,7 +33,7 @@ def finanzas_nueva_cuenta():
     es_ahorro = 1 if request.form.get("es_ahorro") else 0
 
     if not nombre:
-        flash("Escribe un nombre para la cuenta.")
+        flash("Escriu un nom per al compte.")
         return redirect(url_for("finanzas_cuentas"))
 
     conn = get_db_connection()
@@ -44,7 +44,7 @@ def finanzas_nueva_cuenta():
     conn.commit()
     conn.close()
 
-    flash(f"Cuenta '{nombre}' creada.")
+    flash(f"Compte '{nombre}' creat.")
     return redirect(url_for("finanzas_cuentas"))
 
 
@@ -54,7 +54,7 @@ def finanzas_editar_cuenta(cuenta_id):
     usuario_id = session["usuario_id"]
     cuenta = cuenta_del_usuario(cuenta_id, usuario_id)
     if cuenta is None:
-        flash("Esa cuenta no existe.")
+        flash("Aquest compte no existeix.")
         return redirect(url_for("finanzas_cuentas"))
 
     if request.method == "POST":
@@ -63,7 +63,7 @@ def finanzas_editar_cuenta(cuenta_id):
         es_ahorro = 1 if request.form.get("es_ahorro") else 0
 
         if not nombre or saldo is None:
-            flash("Escribe un nombre y un saldo validos.")
+            flash("Escriu un nom i un saldo valids.")
             return redirect(url_for("finanzas_editar_cuenta", cuenta_id=cuenta_id))
 
         conn = get_db_connection()
@@ -74,7 +74,7 @@ def finanzas_editar_cuenta(cuenta_id):
         conn.commit()
         conn.close()
 
-        flash("Cuenta actualizada.")
+        flash("Compte actualitzat.")
         return redirect(url_for("finanzas_cuentas"))
 
     return render_template("finanzas/editar_cuenta.html", cuenta=cuenta)
@@ -86,7 +86,7 @@ def finanzas_eliminar_cuenta(cuenta_id):
     usuario_id = session["usuario_id"]
     cuenta = cuenta_del_usuario(cuenta_id, usuario_id)
     if cuenta is None:
-        flash("Esa cuenta no existe.")
+        flash("Aquest compte no existeix.")
         return redirect(url_for("finanzas_cuentas"))
 
     conn = get_db_connection()
@@ -96,7 +96,7 @@ def finanzas_eliminar_cuenta(cuenta_id):
     ).fetchone()["total"]
 
     if en_uso > 0:
-        flash("No se puede eliminar: hay operaciones asociadas a esta cuenta.")
+        flash("No es pot eliminar: hi ha operacions associades a aquest compte.")
         conn.close()
         return redirect(url_for("finanzas_cuentas"))
 
@@ -105,7 +105,7 @@ def finanzas_eliminar_cuenta(cuenta_id):
     conn.commit()
     conn.close()
 
-    flash("Cuenta eliminada.")
+    flash("Compte eliminat.")
     return redirect(url_for("finanzas_cuentas"))
 
 
@@ -130,5 +130,5 @@ def finanzas_guardar_predefinidas():
     conn.commit()
     conn.close()
 
-    flash("Cuentas predefinidas guardadas.")
+    flash("Comptes predefinits desats.")
     return redirect(url_for("finanzas_cuentas"))

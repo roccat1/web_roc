@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}Editar nomes aquest dia{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario_dia', fecha=fecha) }}" class="volver">&larr; Tornar al dia</a>
+
+    <span class="eyebrow">Nomes {{ fecha_formateada }}</span>
+    <h1>{{ evento['titulo'] }}</h1>
+    <p class="subtitle">
+        Aquest canvi nomes afecta a l'ocurrencia del {{ fecha_formateada }}.
+        La resta de la serie es queda igual.
+    </p>
+
+    <div class="card">
+        <form method="POST">
+            <div class="campo">
+                <label for="titulo">Titol</label>
+                <input type="text" id="titulo" name="titulo"
+                       value="{{ excepcion['titulo'] if excepcion and excepcion['titulo'] else evento['titulo'] }}" required>
+            </div>
+
+            <div class="campo campo-checkbox">
+                <input type="checkbox" id="todo_el_dia" name="todo_el_dia"
+                       {{ 'checked' if (excepcion['todo_el_dia'] if excepcion and excepcion['todo_el_dia'] is not none else evento['todo_el_dia']) else '' }}>
+                <label for="todo_el_dia">Tot el dia (sense hora concreta)</label>
+            </div>
+
+            <div class="campo" id="campo-hora">
+                <label for="hora">Hora</label>
+                <input type="time" id="hora" name="hora"
+                       value="{{ (excepcion['hora'] if excepcion and excepcion['hora'] else evento['hora']) or '' }}">
+            </div>
+
+            <div class="campo">
+                <label for="lugar">Lloc (opcional)</label>
+                <input type="text" id="lugar" name="lugar"
+                       value="{{ (excepcion['lugar'] if excepcion and excepcion['lugar'] else evento['lugar']) or '' }}">
+            </div>
+
+            <div class="campo">
+                <label for="descripcion">Descripcio (opcional)</label>
+                <input type="text" id="descripcion" name="descripcion"
+                       value="{{ (excepcion['descripcion'] if excepcion and excepcion['descripcion'] else evento['descripcion']) or '' }}">
+            </div>
+
+            <p class="tag" style="margin: 6px 0 16px;">
+                La categoria, els avisos i la repeticio son de tota la serie i no es poden
+                canviar nomes per a un dia: per a aixo cal <a href="{{ url_for('calendario_editar', evento_id=evento['id']) }}" style="color: var(--green);">editar tota la serie</a>.
+            </p>
+
+            <button type="submit">Desar nomes aquest dia</button>
+        </form>
+
+        {% if excepcion %}
+            <form method="POST" action="{{ url_for('calendario_ocurrencia_restaurar', evento_id=evento['id'], fecha=fecha) }}" style="margin-top:16px;">
+                <button type="submit" class="btn btn-pequeno" style="width:100%; margin-top:0;">Desfer el canvi i tornar a la serie original</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <script>
+        const casillaTodoElDia = document.getElementById('todo_el_dia');
+        const campoHora = document.getElementById('campo-hora');
+
+        function actualizarCampoHora() {
+            campoHora.style.display = casillaTodoElDia.checked ? 'none' : 'block';
+        }
+        casillaTodoElDia.addEventListener('change', actualizarCampoHora);
+        actualizarCampoHora();
+    </script>
+{% endblock %}

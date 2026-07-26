@@ -3,52 +3,52 @@
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Volver a finanzas</a>
+    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Tornar a finances</a>
 
-    <span class="eyebrow">Historial completo</span>
-    <h1>Operaciones</h1>
+    <span class="eyebrow">Historial complet</span>
+    <h1>Operacions</h1>
 
     {% if operaciones %}
         <div class="tabla-wrap">
-            <table>
+            <table class="tabla-responsive">
                 <thead>
                     <tr>
-                        <th>Fecha</th>
-                        <th>Tipo</th>
-                        <th>Cuenta</th>
+                        <th>Data</th>
+                        <th>Tipus</th>
+                        <th>Compte</th>
                         <th>Categoria</th>
-                        <th>Descripcion</th>
-                        <th>Importe</th>
+                        <th>Descripcio</th>
+                        <th>Import</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for op in operaciones %}
                         <tr>
-                            <td>{{ op['fecha'] }}</td>
-                            <td><span class="badge badge-{{ op['tipo'] }}">{{ op['tipo'] }}</span></td>
-                            <td>
+                            <td data-label="Data">{{ op['fecha'] }}</td>
+                            <td data-label="Tipus"><span class="badge badge-{{ op['tipo'] }}">{{ {'gasto': 'Despesa', 'ingreso': 'Ingres', 'transferencia': 'Transferencia'}[op['tipo']] }}</span></td>
+                            <td data-label="Compte">
                                 {% if op['tipo'] == 'transferencia' %}
                                     {{ op['cuenta_nombre'] }} &rarr; {{ op['cuenta_destino_nombre'] }}
                                 {% else %}
                                     {{ op['cuenta_nombre'] }}
                                 {% endif %}
                             </td>
-                            <td class="tag">
+                            <td class="tag" data-label="Categoria">
                                 {% if op['categoria_nombre'] %}
                                     {{ op['categoria_nombre'] }} &middot; {{ op['subcategoria_nombre'] }}
                                 {% else %}
                                     &mdash;
                                 {% endif %}
                             </td>
-                            <td class="tag">{{ op['descripcion'] if op['descripcion'] else '—' }}</td>
-                            <td class="monto {{ op['tipo'] }}">
+                            <td class="tag" data-label="Descripcio">{{ op['descripcion'] if op['descripcion'] else '—' }}</td>
+                            <td class="monto {{ op['tipo'] }}" data-label="Import">
                                 {% if op['tipo'] == 'gasto' %}-{% elif op['tipo'] == 'ingreso' %}+{% endif %}{{ op['monto'] | euros }}
                             </td>
                             <td style="white-space:nowrap;">
                                 <a href="{{ url_for('finanzas_editar_operacion', operacion_id=op['id']) }}" class="btn btn-pequeno">Editar</a>
                                 <form method="POST" action="{{ url_for('finanzas_eliminar_operacion', operacion_id=op['id']) }}"
-                                      style="display:inline;" onsubmit="return confirm('¿Eliminar esta operacion? Se ajustara el saldo de la cuenta.');">
+                                      style="display:inline;" onsubmit="return confirm('Vols eliminar aquesta operacio? S\'ajustara el saldo del compte.');">
                                     <button type="submit" class="btn btn-peligro">Eliminar</button>
                                 </form>
                             </td>
@@ -58,6 +58,6 @@
             </table>
         </div>
     {% else %}
-        <p class="vacio">Todavia no has registrado ninguna operacion.</p>
+        <p class="vacio">Encara no has registrat cap operacio.</p>
     {% endif %}
 {% endblock %}

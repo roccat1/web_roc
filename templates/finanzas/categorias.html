@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block titulo %}Categorias{% endblock %}
+{% block titulo %}Categories{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Volver a finanzas</a>
+    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Tornar a finances</a>
 
-    <span class="eyebrow">Organizacion</span>
-    <h1>Categorias y subcategorias</h1>
-    <p class="subtitle">Cada gasto o ingreso se clasifica con una de estas</p>
+    <span class="eyebrow">Organitzacio</span>
+    <h1>Categories i subcategories</h1>
+    <p class="subtitle">Cada despesa o ingres es classifica amb una d'aquestes</p>
 
     <div class="columnas-categorias">
         <div>
-            <div class="titulo-columna" style="color: var(--red-bright);">Gastos</div>
+            <div class="titulo-columna" style="color: var(--red-bright);">Despeses</div>
             {% if gastos %}
                 {% for cat in gastos %}
                     <div class="categoria-bloque">
@@ -20,7 +20,7 @@
                             <span class="acciones-categoria">
                                 <a href="{{ url_for('finanzas_editar_categoria', categoria_id=cat.id) }}" class="btn btn-pequeno">Editar</a>
                                 <form method="POST" action="{{ url_for('finanzas_eliminar_categoria', categoria_id=cat.id) }}"
-                                      onsubmit="return confirm('¿Eliminar la categoria {{ cat.nombre }}?');">
+                                      onsubmit="return confirm('Vols eliminar la categoria {{ cat.nombre }}?');">
                                     <button type="submit" class="btn btn-peligro">Eliminar</button>
                                 </form>
                             </span>
@@ -31,7 +31,7 @@
                                     {{ sub.nombre }}
                                     <a href="{{ url_for('finanzas_editar_subcategoria', subcategoria_id=sub.id) }}">✎</a>
                                     <form method="POST" action="{{ url_for('finanzas_eliminar_subcategoria', subcategoria_id=sub.id) }}"
-                                          onsubmit="return confirm('¿Eliminar esta subcategoria?');">
+                                          onsubmit="return confirm('Vols eliminar aquesta subcategoria?');">
                                         <button type="submit" class="mini-x" title="Eliminar">×</button>
                                     </form>
                                 </li>
@@ -40,19 +40,19 @@
                         <form method="POST" action="{{ url_for('finanzas_nueva_subcategoria') }}" class="form-linea">
                             <input type="hidden" name="categoria_id" value="{{ cat.id }}">
                             <div class="campo">
-                                <input type="text" name="nombre" placeholder="Nueva subcategoria" required>
+                                <input type="text" name="nombre" placeholder="Nova subcategoria" required>
                             </div>
-                            <button type="submit" class="btn btn-pequeno">Anadir</button>
+                            <button type="submit" class="btn btn-pequeno">Afegir</button>
                         </form>
                     </div>
                 {% endfor %}
             {% else %}
-                <p class="vacio">Sin categorias de gasto todavia.</p>
+                <p class="vacio">Encara no hi ha categories de despesa.</p>
             {% endif %}
         </div>
 
         <div>
-            <div class="titulo-columna" style="color: var(--green);">Ingresos</div>
+            <div class="titulo-columna" style="color: var(--green);">Ingressos</div>
             {% if ingresos %}
                 {% for cat in ingresos %}
                     <div class="categoria-bloque">
@@ -61,7 +61,7 @@
                             <span class="acciones-categoria">
                                 <a href="{{ url_for('finanzas_editar_categoria', categoria_id=cat.id) }}" class="btn btn-pequeno">Editar</a>
                                 <form method="POST" action="{{ url_for('finanzas_eliminar_categoria', categoria_id=cat.id) }}"
-                                      onsubmit="return confirm('¿Eliminar la categoria {{ cat.nombre }}?');">
+                                      onsubmit="return confirm('Vols eliminar la categoria {{ cat.nombre }}?');">
                                     <button type="submit" class="btn btn-peligro">Eliminar</button>
                                 </form>
                             </span>
@@ -72,7 +72,7 @@
                                     {{ sub.nombre }}
                                     <a href="{{ url_for('finanzas_editar_subcategoria', subcategoria_id=sub.id) }}">✎</a>
                                     <form method="POST" action="{{ url_for('finanzas_eliminar_subcategoria', subcategoria_id=sub.id) }}"
-                                          onsubmit="return confirm('¿Eliminar esta subcategoria?');">
+                                          onsubmit="return confirm('Vols eliminar aquesta subcategoria?');">
                                         <button type="submit" class="mini-x" title="Eliminar">×</button>
                                     </form>
                                 </li>
@@ -81,30 +81,30 @@
                         <form method="POST" action="{{ url_for('finanzas_nueva_subcategoria') }}" class="form-linea">
                             <input type="hidden" name="categoria_id" value="{{ cat.id }}">
                             <div class="campo">
-                                <input type="text" name="nombre" placeholder="Nueva subcategoria" required>
+                                <input type="text" name="nombre" placeholder="Nova subcategoria" required>
                             </div>
-                            <button type="submit" class="btn btn-pequeno">Anadir</button>
+                            <button type="submit" class="btn btn-pequeno">Afegir</button>
                         </form>
                     </div>
                 {% endfor %}
             {% else %}
-                <p class="vacio">Sin categorias de ingreso todavia.</p>
+                <p class="vacio">Encara no hi ha categories d'ingres.</p>
             {% endif %}
         </div>
     </div>
 
     <div class="card">
-        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Nueva categoria</h2>
+        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Nova categoria</h2>
         <form method="POST" action="{{ url_for('finanzas_nueva_categoria') }}" class="form-linea">
             <div class="campo">
-                <label for="nombre">Nombre</label>
-                <input type="text" id="nombre" name="nombre" placeholder="Ej: Alimentacion" required>
+                <label for="nombre">Nom</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ex: Alimentacio" required>
             </div>
             <div class="campo">
-                <label for="tipo">Tipo</label>
+                <label for="tipo">Tipus</label>
                 <select id="tipo" name="tipo">
-                    <option value="gasto">Gasto</option>
-                    <option value="ingreso">Ingreso</option>
+                    <option value="gasto">Despesa</option>
+                    <option value="ingreso">Ingres</option>
                 </select>
             </div>
             <button type="submit">Crear categoria</button>

@@ -23,7 +23,7 @@ def registro():
         password = request.form["password"]
 
         if not username or not password:
-            flash("Rellena usuario y contrasena.")
+            flash("Omple usuari i contrasenya.")
             return redirect(url_for("registro"))
 
         # Nunca guardamos la contrasena tal cual, se guarda "hasheada".
@@ -37,12 +37,12 @@ def registro():
             )
             conn.commit()
         except sqlite3.IntegrityError:
-            flash("Ese nombre de usuario ya existe, prueba con otro.")
+            flash("Aquest nom d'usuari ja existeix, prova amb un altre.")
             conn.close()
             return redirect(url_for("registro"))
         conn.close()
 
-        flash("Cuenta creada correctamente. Ya puedes iniciar sesion.")
+        flash("Compte creat correctament. Ja pots iniciar sessio.")
         return redirect(url_for("login"))
 
     return render_template("registro.html")
@@ -61,7 +61,7 @@ def login():
         conn.close()
 
         if usuario is None or not check_password_hash(usuario["password"], password):
-            flash("Usuario o contrasena incorrectos.")
+            flash("Usuari o contrasenya incorrectes.")
             return redirect(url_for("login"))
 
         session.permanent = True
@@ -75,6 +75,6 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    flash("Sesion cerrada correctamente.")
+    flash("Sessio tancada correctament.")
     return redirect(url_for("index"))
 

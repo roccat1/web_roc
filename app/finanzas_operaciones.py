@@ -89,7 +89,7 @@ def finanzas_nueva_operacion():
     cuentas = obtener_cuentas(usuario_id)
 
     if not cuentas:
-        flash("Antes de crear una operacion necesitas al menos una cuenta.")
+        flash("Abans de crear una operacio necessites almenys un compte.")
         return redirect(url_for("finanzas_cuentas"))
 
     if request.method == "POST":
@@ -102,14 +102,14 @@ def finanzas_nueva_operacion():
         errores = []
 
         if tipo not in TIPOS_OPERACION:
-            errores.append("Elige un tipo de operacion valido.")
+            errores.append("Tria un tipus d'operacio valid.")
 
         cuenta = cuenta_del_usuario(cuenta_id, usuario_id) if cuenta_id else None
         if cuenta is None:
-            errores.append("Elige una cuenta valida.")
+            errores.append("Tria un compte valid.")
 
         if not monto or monto <= 0:
-            errores.append("El importe debe ser mayor que 0.")
+            errores.append("L'import ha de ser mes gran que 0.")
 
         categoria_id = subcategoria_id = None
         cuenta_destino = None
@@ -120,22 +120,22 @@ def finanzas_nueva_operacion():
 
             categoria = categoria_del_usuario(categoria_id, usuario_id) if categoria_id else None
             if categoria is None or categoria["tipo"] != tipo:
-                errores.append("Elige una categoria valida para ese tipo de operacion.")
+                errores.append("Tria una categoria valida per a aquest tipus d'operacio.")
 
             subcategoria = (
                 subcategoria_de_categoria(subcategoria_id, categoria_id)
                 if categoria and subcategoria_id else None
             )
             if subcategoria is None:
-                errores.append("Elige una subcategoria valida.")
+                errores.append("Tria una subcategoria valida.")
 
         elif tipo == "transferencia":
             cuenta_destino_id = request.form.get("cuenta_destino_id", type=int)
             cuenta_destino = cuenta_del_usuario(cuenta_destino_id, usuario_id) if cuenta_destino_id else None
             if cuenta_destino is None:
-                errores.append("Elige una cuenta destino valida.")
+                errores.append("Tria un compte desti valid.")
             elif cuenta and cuenta_destino_id == cuenta["id"]:
-                errores.append("La cuenta origen y destino no pueden ser la misma.")
+                errores.append("El compte origen i desti no poden ser el mateix.")
 
         if errores:
             for error in errores:
@@ -165,7 +165,7 @@ def finanzas_nueva_operacion():
         conn.commit()
         conn.close()
 
-        flash("Operacion guardada correctamente.")
+        flash("Operacio desada correctament.")
         return redirect(url_for("finanzas"))
 
     # GET: preparamos los datos que necesita el formulario
@@ -196,7 +196,7 @@ def finanzas_editar_operacion(operacion_id):
 
     if operacion is None:
         conn.close()
-        flash("Esa operacion no existe.")
+        flash("Aquesta operacio no existeix.")
         return redirect(url_for("finanzas_operaciones"))
 
     cuentas = obtener_cuentas(usuario_id)
@@ -219,14 +219,14 @@ def finanzas_editar_operacion(operacion_id):
         errores = []
 
         if tipo not in TIPOS_OPERACION:
-            errores.append("Elige un tipo de operacion valido.")
+            errores.append("Tria un tipus d'operacio valid.")
 
         cuenta = cuenta_del_usuario(cuenta_id, usuario_id) if cuenta_id else None
         if cuenta is None:
-            errores.append("Elige una cuenta valida.")
+            errores.append("Tria un compte valid.")
 
         if not monto or monto <= 0:
-            errores.append("El importe debe ser mayor que 0.")
+            errores.append("L'import ha de ser mes gran que 0.")
 
         categoria_id = subcategoria_id = None
         cuenta_destino = None
@@ -237,22 +237,22 @@ def finanzas_editar_operacion(operacion_id):
 
             categoria = categoria_del_usuario(categoria_id, usuario_id) if categoria_id else None
             if categoria is None or categoria["tipo"] != tipo:
-                errores.append("Elige una categoria valida para ese tipo de operacion.")
+                errores.append("Tria una categoria valida per a aquest tipus d'operacio.")
 
             subcategoria = (
                 subcategoria_de_categoria(subcategoria_id, categoria_id)
                 if categoria and subcategoria_id else None
             )
             if subcategoria is None:
-                errores.append("Elige una subcategoria valida.")
+                errores.append("Tria una subcategoria valida.")
 
         elif tipo == "transferencia":
             cuenta_destino_id = request.form.get("cuenta_destino_id", type=int)
             cuenta_destino = cuenta_del_usuario(cuenta_destino_id, usuario_id) if cuenta_destino_id else None
             if cuenta_destino is None:
-                errores.append("Elige una cuenta destino valida.")
+                errores.append("Tria un compte desti valid.")
             elif cuenta and cuenta_destino_id == cuenta["id"]:
-                errores.append("La cuenta origen y destino no pueden ser la misma.")
+                errores.append("El compte origen i desti no poden ser el mateix.")
 
         if errores:
             for error in errores:
@@ -299,7 +299,7 @@ def finanzas_editar_operacion(operacion_id):
         conn.commit()
         conn.close()
 
-        flash("Operacion actualizada.")
+        flash("Operacio actualitzada.")
         return redirect(destino)
 
     # GET: preparamos los datos que necesita el formulario
@@ -336,7 +336,7 @@ def finanzas_eliminar_operacion(operacion_id):
         destino = url_for("finanzas_operaciones")
 
     if operacion is None:
-        flash("Esa operacion no existe.")
+        flash("Aquesta operacio no existeix.")
         conn.close()
         return redirect(destino)
 
@@ -357,5 +357,5 @@ def finanzas_eliminar_operacion(operacion_id):
     conn.commit()
     conn.close()
 
-    flash("Operacion eliminada.")
+    flash("Operacio eliminada.")
     return redirect(destino)

@@ -59,13 +59,13 @@ def vincular_chat_con_codigo(codigo, chat_id):
 
     if fila is None:
         conn.close()
-        return None, "Ese codigo no existe o ya se uso. Genera uno nuevo desde la web."
+        return None, "Aquest codi no existeix o ja s'ha fet servir. Genera'n un de nou des de la web."
 
     if datetime.fromisoformat(fila["expira"]) < datetime.now():
         conn.execute("DELETE FROM codigos_telegram WHERE codigo = ?", (codigo,))
         conn.commit()
         conn.close()
-        return None, "Ese codigo ha caducado. Genera uno nuevo desde la web."
+        return None, "Aquest codi ha caducat. Genera'n un de nou des de la web."
 
     usuario_id = fila["usuario_id"]
 

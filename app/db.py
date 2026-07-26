@@ -17,15 +17,15 @@ DB_PATH = DATABASE_PATH
 # Los tres tipos de operacion que existen en la seccion de finanzas.
 TIPOS_OPERACION = ("gasto", "ingreso", "transferencia")
 
-# Nombres de los meses en espanol, para el apartado de analisis.
+# Nombres de los meses en catalan, para el apartado de analisis.
 NOMBRES_MESES = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    "Gener", "Febrer", "Marc", "Abril", "Maig", "Juny",
+    "Juliol", "Agost", "Setembre", "Octubre", "Novembre", "Desembre",
 ]
 
 # Categorias que se sugieren (pero no obligan) al crear una fecha de caducidad.
 CATEGORIAS_CADUCIDAD_SUGERIDAS = [
-    "Documentacion", "Vehiculo", "Hogar", "Salud", "Seguros", "Suscripciones", "Otros",
+    "Documentacio", "Vehicle", "Llar", "Salut", "Assegurances", "Subscripcions", "Altres",
 ]
 
 # Color del LED segun lo urgente que sea una fecha de caducidad.
@@ -33,7 +33,7 @@ COLOR_LED_POR_ESTADO = {"caducado": "rojo", "proximo": "amarillo", "vigente": "v
 
 # Categorias que se sugieren (pero no obligan) al crear una categoria del calendario.
 CATEGORIAS_CALENDARIO_SUGERIDAS = [
-    "Personal", "Trabajo", "Salud", "Familia", "Ocio", "Cumpleanos", "Viajes", "Otros",
+    "Personal", "Feina", "Salut", "Familia", "Oci", "Aniversaris", "Viatges", "Altres",
 ]
 
 # Colores disponibles para las categorias del calendario. Se guarda solo la
@@ -232,6 +232,83 @@ def init_db():
             FOREIGN KEY (categoria_id) REFERENCES calendario_categorias (id)
         )
     """)
+
+    # Categories addicionals d'un esdeveniment (a mes de la principal, que
+    # es la que es guarda a calendario_eventos.categoria_id i decideix el
+    # color del punt al mes). Es una relacio N a N: un esdeveniment pot
+    # tenir diverses etiquetes, i una categoria es pot fer servir com a
+    # etiqueta addicional en molts esdeveniments.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_evento_categorias (
+            evento_id INTEGER NOT NULL,
+            categoria_id INTEGER NOT NULL,
+            PRIMARY KEY (evento_id, categoria_id),
+            FOREIGN KEY (evento_id) REFERENCES calendario_eventos (id),
+            FOREIGN KEY (categoria_id) REFERENCES calendario_categorias (id)
+        )
+    """)
+
+    # Uno o varios avisos por evento (ej. "avisa 7 dies abans i tambe el
+    # mateix dia"). Sustituye en la practica a la columna suelta
+    # calendario_eventos.recordatorio_dias, que se mantiene solo por
+    # compatibilidad con bases de datos antiguas: si un evento no tiene
+    # ninguna fila aqui, el codigo usa esa columna como unico aviso.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_recordatorios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            evento_id INTEGER NOT NULL,
+            dias_antes INTEGER NOT NULL,
+            UNIQUE (evento_id, dias_antes),
+            FOREIGN KEY (evento_id) REFERENCES calendario_eventos (id)
+        )
+    """)
+
+    # Registro de que avisos ya se han enviado, por evento + ocurrencia +
+    # umbral concreto (en vez de la unica columna aviso_enviado_fecha),
+    # para poder tener varios avisos por evento sin repetirlos.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_avisos_enviados (
+            evento_id INTEGER NOT NULL,
+            fecha_ocurrencia TEXT NOT NULL,
+            dias_antes INTEGER NOT NULL,
+            PRIMARY KEY (evento_id, fecha_ocurrencia, dias_antes),
+            FOREIGN KEY (evento_id) REFERENCES calendario_eventos (id)
+        )
+    """)
+
+    # Excepciones puntuals d'un esdeveniment recurrent: cancel·lar nomes
+    # una ocurrencia concreta, o canviar-ne el titol/hora/lloc/descripcio
+    # nomes per a aquella data, sense afectar a la resta de la serie.
+    # (Nomes es guarda la data original de l'ocurrencia; no permet moure
+    # una ocurrencia a un dia diferent, nomes editar-la o cancelar-la.)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_excepciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            evento_id INTEGER NOT NULL,
+            fecha_ocurrencia TEXT NOT NULL,
+            cancelada INTEGER NOT NULL DEFAULT 0,
+            titulo TEXT,
+            hora TEXT,
+            todo_el_dia INTEGER,
+            lugar TEXT,
+            descripcion TEXT,
+            UNIQUE (evento_id, fecha_ocurrencia),
+            FOREIGN KEY (evento_id) REFERENCES calendario_eventos (id)
+        )
+    """)
+
+    # Indices: sin ellos, cada vista del calendario recorre entera la
+    # tabla de eventos aunque solo haga falta un usuario o un rango de
+    # fechas. Con pocos eventos no se nota, pero no cuesta nada tenerlos.
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_calendario_eventos_usuario ON calendario_eventos (usuario_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_calendario_eventos_fecha ON calendario_eventos (fecha)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_calendario_excepciones_evento ON calendario_excepciones (evento_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_calendario_recordatorios_evento ON calendario_recordatorios (evento_id)"
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_caducidades_usuario ON caducidades (usuario_id)")
 
     conn.commit()
     conn.close()

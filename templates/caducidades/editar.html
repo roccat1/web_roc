@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block titulo %}Editar registro{% endblock %}
+{% block titulo %}Editar registre{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('caducidades') }}" class="volver">&larr; Volver a caducidades</a>
+    <a href="{{ url_for('caducidades') }}" class="volver">&larr; Tornar a caducitats</a>
 
     <span class="eyebrow">Editar</span>
     <h1>{{ item['nombre'] }}</h1>
-    <p class="subtitle">Actualiza la fecha para marcarlo como renovado</p>
+    <p class="subtitle">Actualitza la data per marcar-lo com renovat</p>
 
     <div class="card">
         <form method="POST">
             <div class="campo">
-                <label for="nombre">Nombre</label>
+                <label for="nombre">Nom</label>
                 <input type="text" id="nombre" name="nombre" value="{{ item['nombre'] }}" required>
             </div>
 
@@ -27,31 +27,31 @@
             </div>
 
             <div class="campo">
-                <label for="fecha_caducidad">Fecha de caducidad</label>
+                <label for="fecha_caducidad">Data de caducitat</label>
                 <input type="date" id="fecha_caducidad" name="fecha_caducidad" value="{{ item['fecha_caducidad'] }}" required>
             </div>
 
             <div class="campo">
-                <label for="aviso_dias">Avisar con antelacion (dias)</label>
+                <label for="aviso_dias">Avisar amb antelacio (dies)</label>
                 <input type="number" id="aviso_dias" name="aviso_dias" value="{{ item['aviso_dias'] }}" min="0">
             </div>
 
             <div class="campo">
-                <label for="dias_revalidacion">Revalidar automaticamente cada (dias)</label>
+                <label for="dias_revalidacion">Revalidar automaticament cada (dies)</label>
                 <input type="number" id="dias_revalidacion" name="dias_revalidacion" min="1"
-                       value="{{ item['dias_revalidacion'] or '' }}" placeholder="Ej: 365 (opcional)">
+                       value="{{ item['dias_revalidacion'] or '' }}" placeholder="Ex: 365 (opcional)">
                 <p class="tag" style="margin: 6px 0 0;">
-                    Si lo rellenas, en el listado aparecera un boton "Revalidar" que
-                    pone la fecha en hoy + estos dias, sin tener que editarla a mano.
+                    Si l'omples, al llistat apareixera un boto "Revalidar" que
+                    posa la data a avui + aquests dies, sense haver-la d'editar a ma.
                 </p>
             </div>
 
             <div class="campo">
-                <label for="notas">Notas (opcional)</label>
+                <label for="notas">Notes (opcional)</label>
                 <input type="text" id="notas" name="notas" value="{{ item['notas'] or '' }}">
             </div>
 
-            <button type="submit">Guardar cambios</button>
+            <button type="submit">Desar els canvis</button>
         </form>
     </div>
 {% endblock %}

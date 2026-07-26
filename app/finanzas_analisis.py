@@ -69,9 +69,9 @@ def finanzas_analisis():
         parametros_periodo.append(mes_seleccionado)
 
     if anio_seleccionado == "todos":
-        etiqueta_periodo = "Todos los anios"
+        etiqueta_periodo = "Tots els anys"
     elif mes_seleccionado == "todos":
-        etiqueta_periodo = f"Anio {anio_seleccionado}"
+        etiqueta_periodo = f"Any {anio_seleccionado}"
     else:
         etiqueta_periodo = f"{NOMBRES_MESES[int(mes_seleccionado) - 1]} {anio_seleccionado}"
 

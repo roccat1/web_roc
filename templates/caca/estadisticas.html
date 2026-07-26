@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block titulo %}Estadisticas de Caca{% endblock %}
+{% block titulo %}Estadistiques de Caca{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('caca') }}" class="volver">&larr; Volver a registro</a>
+    <a href="{{ url_for('caca') }}" class="volver">&larr; Tornar al registre</a>
 
-    <span class="eyebrow">Estadisticas</span>
-    <h1 style="text-align:center;">{{ 'Tus estadisticas' if es_propio else nombre_objetivo + ' (publico)' }}</h1>
-    <p class="subtitle">Totales, medias y el grafico de siempre</p>
+    <span class="eyebrow">Estadistiques</span>
+    <h1 style="text-align:center;">{{ 'Les teves estadistiques' if es_propio else nombre_objetivo + ' (public)' }}</h1>
+    <p class="subtitle">Totals, mitjanes i el grafic de sempre</p>
 
     {% if usuarios_visibles|length > 1 %}
         <div class="card" style="margin-bottom:20px;">
             <div class="campo" style="margin:0;">
-                <label for="selector-usuario">Ver estadisticas de</label>
+                <label for="selector-usuario">Veure estadistiques de</label>
                 <select id="selector-usuario" onchange="location.href='{{ url_for('caca_estadisticas') }}?usuario_id=' + this.value;">
                     {% for u in usuarios_visibles %}
                         <option value="{{ u['id'] }}" {{ 'selected' if u['id'] == usuario_objetivo_id else '' }}>{{ u['username'] }}</option>
@@ -32,34 +32,34 @@
             <div class="cifra" id="stat-total">-</div>
         </div>
         <div class="kpi-card">
-            <span class="etiqueta">Media/dia (30d)</span>
+            <span class="etiqueta">Mitjana/dia (30d)</span>
             <div class="cifra" id="stat-avg30">-</div>
         </div>
         <div class="kpi-card">
-            <span class="etiqueta">Media/dia (365d)</span>
+            <span class="etiqueta">Mitjana/dia (365d)</span>
             <div class="cifra" id="stat-avg365">-</div>
         </div>
         <div class="kpi-card">
-            <span class="etiqueta">Media/dia (siempre)</span>
+            <span class="etiqueta">Mitjana/dia (sempre)</span>
             <div class="cifra" id="stat-avgever">-</div>
         </div>
         <div class="kpi-card">
-            <span class="etiqueta">Hora pico (30d)</span>
+            <span class="etiqueta">Hora punta (30d)</span>
             <div class="cifra" id="stat-peakhour">-</div>
         </div>
     </div>
 
     <div class="bloque-analisis">
-        <div class="titulo-bloque">Grafico</div>
+        <div class="titulo-bloque">Grafic</div>
 
         <div class="campo" style="margin-bottom:16px;">
             <label for="selector-vista">Vista</label>
             <select id="selector-vista">
-                <option value="last30">Ultimos 30 dias</option>
-                <option value="last365">Ultimo anio</option>
-                <option value="monthly">Media por meses (historico)</option>
-                <option value="yearly">Media por anios (historico)</option>
-                <option value="hours">Por hora del dia (historico)</option>
+                <option value="last30">Ultims 30 dies</option>
+                <option value="last365">Ultim any</option>
+                <option value="monthly">Mitjana per mesos (historic)</option>
+                <option value="yearly">Mitjana per anys (historic)</option>
+                <option value="hours">Per hora del dia (historic)</option>
             </select>
         </div>
 
@@ -70,9 +70,9 @@
         </div>
 
         <p class="tag" style="text-align:center; margin-top:-6px;">
-            <span style="color: var(--green);">&#9632;</span> Tendencia (media movil)
+            <span style="color: var(--green);">&#9632;</span> Tendencia (mitjana movil)
             &nbsp;&nbsp;
-            <span style="color: var(--text-muted);">&#9632;</span> Datos reales
+            <span style="color: var(--text-muted);">&#9632;</span> Dades reals
         </p>
 
         <div class="grafico-wrap">
@@ -82,43 +82,44 @@
 
     {% if es_propio %}
         <div class="card" style="margin-top:20px;">
-            <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Privacidad</h2>
+            <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Privacitat</h2>
             <p style="color: var(--text-muted); font-size:13px; margin-top:-6px;">
-                Si tu perfil es publico, otros usuarios de la app pueden ver estas estadisticas
-                (nunca tu historial detallado, solo los totales y el grafico).
+                Si el teu perfil es public, altres usuaris de l'app poden veure aquestes
+                estadistiques (mai el teu historial detallat, nomes els totals i el grafic).
             </p>
             <form method="POST" action="{{ url_for('caca_privacidad') }}" style="display:flex; gap:8px;">
-                <button type="submit" name="privacidad" value="privado" class="btn {{ 'btn-primario' if not perfil_publico else '' }}">Privado</button>
-                <button type="submit" name="privacidad" value="publico" class="btn {{ 'btn-primario' if perfil_publico else '' }}">Publico</button>
+                <button type="submit" name="privacidad" value="privado" class="btn {{ 'btn-primario' if not perfil_publico else '' }}">Privat</button>
+                <button type="submit" name="privacidad" value="publico" class="btn {{ 'btn-primario' if perfil_publico else '' }}">Public</button>
             </form>
         </div>
     {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script>
-        // Datos en bruto que manda Flask: la lista de fechas (una por cada
-        // registro) del usuario que se esta viendo.
+        // Dades en brut que envia Flask: la llista de dates (una per cada
+        // registre) de l'usuari que s'esta veient.
         const fechasISO = {{ fechas_json | tojson }};
         const fechas = fechasISO.map(f => new Date(f));
 
         /* =========================================================
-           LOGICA DE ESTADISTICAS Y GRAFICOS
-           Puerto fiel de home.js del proyecto original (misma formula de
-           media movil, mismos saltos de navegacion, mismas vistas sin
-           paginar para meses/anios). Probada aparte con Node antes de
-           ponerla aqui: ver logica_caca.js y test_logica_caca.js.
+           LOGICA D'ESTADISTIQUES I GRAFICS
+           Port fidel de home.js del projecte original (mateixa formula
+           de mitjana movil, mateixos salts de navegacio, mateixes
+           vistes sense paginar per mesos/anys). Provada a part amb
+           Node abans de posar-la aqui: veure logica_caca.js i
+           test_logica_caca.js.
            ========================================================= */
 
-// Puerto fiel de la logica real de home.js: media movil por vista,
-// navegacion con ventana movil en offset=0 pero saltos a mes/anio
-// natural en offset>=1 para last30/last365, y vistas mensual/anual
-// mostrando todo el historico sin paginar. Probado aqui con Node antes
-// de incrustarlo en la plantilla.
+// Port fidel de la logica real de home.js: mitjana movil per vista,
+// navegacio amb finestra movil en offset=0 pero salts a mes/any
+// natural en offset>=1 per a last30/last365, i vistes mensual/anual
+// mostrant tot l'historic sense paginar. Provat aqui amb Node abans
+// d'incrustar-lo a la plantilla.
 
-const NOMBRES_MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-const NOMBRES_MESES_LARGOS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const NOMBRES_MESES_CORTOS = ['Gen', 'Feb', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Des'];
+const NOMBRES_MESES_LARGOS = ['Gener', 'Febrer', 'Marc', 'Abril', 'Maig', 'Juny', 'Juliol', 'Agost', 'Setembre', 'Octubre', 'Novembre', 'Desembre'];
 
-// Ventana de suavizado (media movil) de cada vista. 1 = sin suavizado.
+// Finestra de suavitzat (mitjana movil) de cada vista. 1 = sense suavitzat.
 const VENTANAS_SUAVIZADO = { last30: 3, last365: 7, monthly: 1, yearly: 1, hours: 2 };
 
 function inicioDeDia(fecha) {
@@ -147,12 +148,12 @@ function formatoUltimaEntrada(fecha, ahora) {
     const ayer = sumarDias(ahora, -1);
     const horaTexto = String(fecha.getHours()).padStart(2, '0') + ':' + String(fecha.getMinutes()).padStart(2, '0');
 
-    if (mismoDia(fecha, ahora)) return 'Hoy: ' + horaTexto;
-    if (mismoDia(fecha, ayer)) return 'Ayer: ' + horaTexto;
+    if (mismoDia(fecha, ahora)) return 'Avui: ' + horaTexto;
+    if (mismoDia(fecha, ayer)) return 'Ahir: ' + horaTexto;
 
     const unDia = 24 * 60 * 60 * 1000;
     const diasAtras = Math.round((inicioDeDia(ahora) - inicioDeDia(fecha)) / unDia);
-    return `Hace ${diasAtras} dias a las ${horaTexto}`;
+    return `Fa ${diasAtras} dies a les ${horaTexto}`;
 }
 
 function esBisiesto(anio) {
@@ -165,8 +166,8 @@ function diaDelAnio(fecha) {
     return Math.floor(diffMs / (24 * 60 * 60 * 1000)) + 1;
 }
 
-// Media movil: cada punto es la media de si mismo y los (ventana-1)
-// puntos anteriores. Con ventana<=1 no hace nada (devuelve los mismos datos).
+// Mitjana movil: cada punt es la mitjana d'ell mateix i els (finestra-1)
+// punts anteriors. Amb finestra<=1 no fa res (retorna les mateixes dades).
 function calcularMediaMovil(datos, ventana) {
     if (ventana <= 1) return datos.slice();
     const resultado = [];
@@ -180,7 +181,7 @@ function calcularMediaMovil(datos, ventana) {
 }
 
 // ============================================================
-// ESTADISTICAS (tarjetas)
+// ESTADISTIQUES (targetes)
 // ============================================================
 
 function calcularEstadisticas(fechasISO, ahora) {
@@ -198,13 +199,13 @@ function calcularEstadisticas(fechasISO, ahora) {
     const avg30 = fechas.filter(f => f >= hace30).length / 30;
     const avg365 = fechas.filter(f => f >= hace365).length / 365;
 
-    // Igual que el original: diferencia en milisegundos entre ahora y el
-    // primer registro, redondeada hacia abajo a dias completos (minimo 1).
+    // Igual que l'original: diferencia en mil·lisegons entre ara i el
+    // primer registre, arrodonida cap avall a dies complets (minim 1).
     const primeraFecha = fechas[0];
     const diasActivos = Math.max(1, Math.floor((ahora - primeraFecha) / unDia));
     const avgEver = total / diasActivos;
 
-    // Hora pico, solo con los registros de los ultimos 30 dias.
+    // Hora punta, nomes amb els registres dels ultims 30 dies.
     const contadorHoras = new Array(24).fill(0);
     fechas.filter(f => f >= hace30).forEach(f => { contadorHoras[f.getHours()]++; });
     let peakHour30 = '-';
@@ -226,11 +227,11 @@ function calcularEstadisticas(fechasISO, ahora) {
 }
 
 // ============================================================
-// DATOS DEL GRAFICO POR VISTA
+// DADES DEL GRAFIC PER VISTA
 // ============================================================
 
-// Cuenta cuantos registros caen en cada dia entre 'inicio' y 'fin' (ambos
-// incluidos). Devuelve las etiquetas (dd/mm) y los valores en el mismo orden.
+// Compta quants registres cauen en cada dia entre 'inicio' i 'fin' (tots
+// dos inclosos). Retorna les etiquetes (dd/mm) i els valors en el mateix ordre.
 function contarPorDia(fechas, inicio, fin) {
     const etiquetas = [];
     const contador = {};
@@ -248,8 +249,8 @@ function contarPorDia(fechas, inicio, fin) {
     return { etiquetas, valores: Object.values(contador) };
 }
 
-// offset=0 -> ventana movil de 30 dias terminando hoy.
-// offset>=1 -> mes natural completo (mes actual - offset meses).
+// offset=0 -> finestra movil de 30 dies acabant avui.
+// offset>=1 -> mes natural complet (mes actual - offset mesos).
 function datosLast30(fechas, offset, hoy) {
     let inicio, fin, etiquetaPeriodo;
 
@@ -270,20 +271,20 @@ function datosLast30(fechas, offset, hoy) {
     return { etiquetas, valores, suavizado, etiquetaPeriodo, navegable: true, haySiguiente: offset > 0 };
 }
 
-// offset=0 -> ventana movil de 365 dias terminando hoy.
-// offset>=1 -> anio natural completo (anio actual - offset).
+// offset=0 -> finestra movil de 365 dies acabant avui.
+// offset>=1 -> any natural complet (any actual - offset).
 function datosLast365(fechas, offset, hoy) {
     let inicio, fin, etiquetaPeriodo;
 
     if (offset === 0) {
         fin = inicioDeDia(hoy);
         inicio = sumarDias(fin, -364);
-        etiquetaPeriodo = 'Ultimos 365 dias';
+        etiquetaPeriodo = 'Ultims 365 dies';
     } else {
         const anioObjetivo = hoy.getFullYear() - offset;
         inicio = new Date(anioObjetivo, 0, 1);
         fin = new Date(anioObjetivo, 11, 31);
-        etiquetaPeriodo = 'Anio ' + anioObjetivo;
+        etiquetaPeriodo = 'Any ' + anioObjetivo;
     }
 
     const { etiquetas, valores } = contarPorDia(fechas, inicio, fin);
@@ -292,8 +293,8 @@ function datosLast365(fechas, offset, hoy) {
     return { etiquetas, valores, suavizado, etiquetaPeriodo, navegable: true, haySiguiente: offset > 0 };
 }
 
-// Sin paginar: todos los meses en los que hay algun registro, de toda
-// la historia. Cada valor es la media de registros/dia de ese mes.
+// Sense paginar: tots els mesos en els quals hi ha algun registre, de
+// tota la historia. Cada valor es la mitjana de registres/dia d'aquell mes.
 function datosMensual(fechas, hoy) {
     const contador = {};
     fechas.forEach(f => {
@@ -315,10 +316,10 @@ function datosMensual(fechas, hoy) {
     });
 
     const suavizado = calcularMediaMovil(valores, VENTANAS_SUAVIZADO.monthly);
-    return { etiquetas, valores, suavizado, etiquetaPeriodo: 'Historico (todos los meses)', navegable: false, haySiguiente: false };
+    return { etiquetas, valores, suavizado, etiquetaPeriodo: 'Historic (tots els mesos)', navegable: false, haySiguiente: false };
 }
 
-// Sin paginar: todos los anios en los que hay algun registro.
+// Sense paginar: tots els anys en els quals hi ha algun registre.
 function datosAnual(fechas, hoy) {
     const contador = {};
     fechas.forEach(f => {
@@ -335,10 +336,10 @@ function datosAnual(fechas, hoy) {
     });
 
     const suavizado = calcularMediaMovil(valores, VENTANAS_SUAVIZADO.yearly);
-    return { etiquetas, valores, suavizado, etiquetaPeriodo: 'Historico (todos los anios)', navegable: false, haySiguiente: false };
+    return { etiquetas, valores, suavizado, etiquetaPeriodo: 'Historic (tots els anys)', navegable: false, haySiguiente: false };
 }
 
-// Sin paginar: distribucion por franjas de 15 minutos, con todo el historico.
+// Sense paginar: distribucio per franges de 15 minuts, amb tot l'historic.
 function datosHoras(fechas) {
     const bins = new Array(96).fill(0);
     fechas.forEach(f => {
@@ -354,11 +355,11 @@ function datosHoras(fechas) {
     }
 
     const suavizado = calcularMediaMovil(bins, VENTANAS_SUAVIZADO.hours);
-    return { etiquetas, valores: bins, suavizado, etiquetaPeriodo: 'Todo el historial', navegable: false, haySiguiente: false };
+    return { etiquetas, valores: bins, suavizado, etiquetaPeriodo: 'Tot l\'historial', navegable: false, haySiguiente: false };
 }
 
         /* =========================================================
-           CONECTAR LA LOGICA CON LA PAGINA
+           CONNECTAR LA LOGICA AMB LA PAGINA
            ========================================================= */
 
         const ahora = new Date();
@@ -374,8 +375,8 @@ function datosHoras(fechas) {
         let offsetActual = 0;
         let grafico = null;
 
-        // Leemos los colores directamente de las variables CSS del tema,
-        // para que el grafico siempre encaje con el resto de la web.
+        // Llegim els colors directament de les variables CSS del tema,
+        // perque el grafic sempre encaixi amb la resta de la web.
         const estilos = getComputedStyle(document.documentElement);
         const colorVerde = estilos.getPropertyValue('--green').trim();
         const colorMuted = estilos.getPropertyValue('--text-muted').trim();
@@ -401,9 +402,9 @@ function datosHoras(fechas) {
             const filaNav = document.getElementById('fila-navegacion');
             filaNav.style.opacity = datos.navegable ? '1' : '0.3';
             filaNav.style.pointerEvents = datos.navegable ? 'auto' : 'none';
-            // Igual que el original: "siguiente" se desactiva al llegar al
-            // periodo mas reciente, pero "anterior" no tiene limite (si no
-            // hay datos mas antiguos, el grafico simplemente sale vacio).
+            // Igual que l'original: "seguent" es desactiva en arribar al
+            // periode mes recent, pero "anterior" no te limit (si no hi ha
+            // dades mes antigues, el grafic simplement surt buit).
             document.getElementById('btn-siguiente').disabled = !datos.haySiguiente;
 
             const esAnual = (vistaActual === 'yearly');
@@ -429,7 +430,7 @@ function datosHoras(fechas) {
                             order: 1,
                         },
                         {
-                            label: 'Datos reales',
+                            label: 'Dades reals',
                             data: datos.valores,
                             borderColor: colorMuted,
                             borderWidth: 1.5,

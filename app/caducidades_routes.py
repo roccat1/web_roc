@@ -75,7 +75,7 @@ def caducidades_nueva():
         conn.commit()
         conn.close()
 
-        flash(f"'{datos['nombre']}' anadido correctamente.")
+        flash(f"'{datos['nombre']}' afegit correctament.")
         return redirect(url_for("caducidades"))
 
     return render_template(
@@ -91,7 +91,7 @@ def caducidades_editar(caducidad_id):
     usuario_id = session["usuario_id"]
     item = caducidad_del_usuario(caducidad_id, usuario_id)
     if item is None:
-        flash("Ese registro no existe.")
+        flash("Aquest registre no existeix.")
         return redirect(url_for("caducidades"))
 
     if request.method == "POST":
@@ -115,7 +115,7 @@ def caducidades_editar(caducidad_id):
         conn.commit()
         conn.close()
 
-        flash("Registro actualizado.")
+        flash("Registre actualitzat.")
         return redirect(url_for("caducidades"))
 
     return render_template(
@@ -131,7 +131,7 @@ def caducidades_eliminar(caducidad_id):
     usuario_id = session["usuario_id"]
     item = caducidad_del_usuario(caducidad_id, usuario_id)
     if item is None:
-        flash("Ese registro no existe.")
+        flash("Aquest registre no existeix.")
         return redirect(url_for("caducidades"))
 
     conn = get_db_connection()
@@ -139,7 +139,7 @@ def caducidades_eliminar(caducidad_id):
     conn.commit()
     conn.close()
 
-    flash(f"'{item['nombre']}' eliminado.")
+    flash(f"'{item['nombre']}' eliminat.")
     return redirect(url_for("caducidades"))
 
 
@@ -151,12 +151,12 @@ def caducidades_revalidar(caducidad_id):
     usuario_id = session["usuario_id"]
     item = caducidad_del_usuario(caducidad_id, usuario_id)
     if item is None:
-        flash("Ese registro no existe.")
+        flash("Aquest registre no existeix.")
         return redirect(url_for("caducidades"))
 
     dias = item["dias_revalidacion"]
     if not dias:
-        flash("Este registro no tiene un tiempo de revalidacion configurado. Editalo para anadirlo.")
+        flash("Aquest registre no te un temps de revalidacio configurat. Edita'l per afegir-lo.")
         return redirect(url_for("caducidades"))
 
     nueva_fecha = date.today() + timedelta(days=dias)
@@ -169,5 +169,5 @@ def caducidades_revalidar(caducidad_id):
     conn.commit()
     conn.close()
 
-    flash(f"'{item['nombre']}' revalidado. Nueva fecha de caducidad: {nueva_fecha.isoformat()}.")
+    flash(f"'{item['nombre']}' revalidat. Nova data de caducitat: {nueva_fecha.isoformat()}.")
     return redirect(url_for("caducidades"))

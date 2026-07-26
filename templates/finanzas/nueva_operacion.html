@@ -1,40 +1,40 @@
 {% extends "base.html" %}
-{% block titulo %}Nueva operacion{% endblock %}
+{% block titulo %}Nova operacio{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Volver a finanzas</a>
+    <a href="{{ url_for('finanzas') }}" class="volver">&larr; Tornar a finances</a>
 
     <div class="pin-row">
         <span></span><span></span><span></span><span></span><span></span>
     </div>
     <span class="eyebrow">Registrar</span>
-    <h1>Nueva operacion</h1>
-    <p class="subtitle">Elige el tipo, la cuenta y la categoria</p>
+    <h1>Nova operacio</h1>
+    <p class="subtitle">Tria el tipus, el compte i la categoria</p>
 
     <div class="header-finanzas" style="margin-top:0; margin-bottom:20px;">
         <div class="acciones">
-            <button type="button" id="btn-modo-formulario" class="btn btn-primario btn-pequeno">Formulario</button>
-            <button type="button" id="btn-modo-guiado" class="btn btn-pequeno">Paso a paso, como el bot</button>
+            <button type="button" id="btn-modo-formulario" class="btn btn-primario btn-pequeno">Formulari</button>
+            <button type="button" id="btn-modo-guiado" class="btn btn-pequeno">Pas a pas, com el bot</button>
         </div>
     </div>
 
-    <!-- El mismo <form> lo rellenan tanto el modo formulario como el modo
-         guiado: al final los dos mandan los mismos campos al servidor. -->
+    <!-- El mateix <form> l'omplen tant el mode formulari com el mode
+         guiat: al final tots dos envien els mateixos camps al servidor. -->
     <form method="POST" id="formulario-operacion">
 
         <div class="card" id="modo-formulario">
             <div class="campo">
-                <label for="tipo">Tipo de operacion</label>
+                <label for="tipo">Tipus d'operacio</label>
                 <select id="tipo" name="tipo" required>
-                    <option value="gasto">Gasto</option>
-                    <option value="ingreso">Ingreso</option>
-                    <option value="transferencia">Transferencia entre cuentas</option>
+                    <option value="gasto">Despesa</option>
+                    <option value="ingreso">Ingres</option>
+                    <option value="transferencia">Transferencia entre comptes</option>
                 </select>
             </div>
 
             <div class="campo">
-                <label id="etiqueta-cuenta" for="cuenta_id">Cuenta</label>
+                <label id="etiqueta-cuenta" for="cuenta_id">Compte</label>
                 <select id="cuenta_id" name="cuenta_id" required>
                     {% for cuenta in cuentas %}
                         <option value="{{ cuenta['id'] }}">{{ cuenta['nombre'] }}</option>
@@ -43,7 +43,7 @@
             </div>
 
             <div class="campo" id="campo-destino" style="display:none;">
-                <label for="cuenta_destino_id">Cuenta destino</label>
+                <label for="cuenta_destino_id">Compte desti</label>
                 <select id="cuenta_destino_id" name="cuenta_destino_id">
                     {% for cuenta in cuentas %}
                         <option value="{{ cuenta['id'] }}">{{ cuenta['nombre'] }}</option>
@@ -62,30 +62,30 @@
             </div>
 
             <div class="campo">
-                <label for="monto">Importe (€)</label>
+                <label for="monto">Import (€)</label>
                 <input type="number" id="monto" name="monto" step="0.01" min="0.01" required>
             </div>
 
             <div class="campo">
-                <label for="fecha">Fecha</label>
+                <label for="fecha">Data</label>
                 <input type="date" id="fecha" name="fecha" value="{{ hoy }}" required>
             </div>
 
             <div class="campo">
-                <label for="descripcion">Descripcion (opcional)</label>
+                <label for="descripcion">Descripcio (opcional)</label>
                 <input type="text" id="descripcion" name="descripcion">
             </div>
 
-            <button type="submit">Guardar operacion</button>
+            <button type="submit">Desar operacio</button>
         </div>
 
-        <!-- Modo guiado: va preguntando de una en una las mismas cosas que
-             el formulario de arriba, con botones para elegir, y al final
-             rellena esos mismos campos y envia el formulario. -->
+        <!-- Mode guiat: va preguntant d'una en una les mateixes coses que
+             el formulari de dalt, amb botons per triar, i al final omple
+             aquests mateixos camps i envia el formulari. -->
         <div class="card" id="modo-guiado" style="display:none;">
             <div class="progreso-pasos" id="progreso-pasos"></div>
 
-            <span class="eyebrow" id="guiado-titulo">Paso 1</span>
+            <span class="eyebrow" id="guiado-titulo">Pas 1</span>
             <h2 id="guiado-pregunta" style="font-family: var(--font-mono); font-size:17px; margin: 4px 0 20px;"></h2>
 
             <div id="guiado-opciones-botones" class="opciones-guiado"></div>
@@ -93,31 +93,31 @@
             <div id="guiado-resumen" style="display:none;"></div>
 
             <div style="margin-top:22px; display:flex; justify-content:center; gap:8px;">
-                <button type="button" id="guiado-atras" class="btn btn-pequeno" style="display:none;">&larr; Atras</button>
-                <button type="button" id="guiado-reiniciar" class="btn btn-pequeno" style="display:none;">Empezar de nuevo</button>
+                <button type="button" id="guiado-atras" class="btn btn-pequeno" style="display:none;">&larr; Enrere</button>
+                <button type="button" id="guiado-reiniciar" class="btn btn-pequeno" style="display:none;">Comencar de nou</button>
             </div>
         </div>
     </form>
 
     {% if not categorias %}
         <p class="vacio">
-            Aun no tienes categorias para gastos e ingresos.
+            Encara no tens categories per a despeses i ingressos.
             <a href="{{ url_for('finanzas_categorias') }}" style="color: var(--green);">Crea la primera aqui</a>.
         </p>
     {% endif %}
 
     <script>
-        // Datos que nos manda Flask: todas las categorias del usuario, cada
-        // una con su lista de subcategorias, las cuentas, y las cuentas
-        // predefinidas por tipo de operacion. Con esto el navegador puede
-        // montar los dos modos (formulario y paso a paso) sin recargar la
-        // pagina.
+        // Dades que ens envia Flask: totes les categories de l'usuari, cada
+        // una amb la seva llista de subcategories, els comptes, i els
+        // comptes predefinits per tipus d'operacio. Amb aixo el navegador
+        // pot muntar els dos modes (formulari i pas a pas) sense recarregar
+        // la pagina.
         const categorias = {{ categorias | tojson }};
         const cuentas = {{ cuentas_json | tojson }};
         const predefinidas = {{ predefinidas | tojson }};
 
         /* =========================================================
-           MODO FORMULARIO (el de siempre, con los <select> normales)
+           MODE FORMULARI (el de sempre, amb els <select> normals)
            ========================================================= */
 
         const selectTipo = document.getElementById('tipo');
@@ -138,7 +138,7 @@
                 campoCategoria.style.display = 'none';
                 campoSubcategoria.style.display = 'none';
                 campoDestino.style.display = 'block';
-                etiquetaCuenta.textContent = 'Cuenta origen';
+                etiquetaCuenta.textContent = 'Compte origen';
                 selectCategoria.required = false;
                 selectSubcategoria.required = false;
                 selectDestino.required = true;
@@ -146,7 +146,7 @@
                 campoCategoria.style.display = 'block';
                 campoSubcategoria.style.display = 'block';
                 campoDestino.style.display = 'none';
-                etiquetaCuenta.textContent = 'Cuenta';
+                etiquetaCuenta.textContent = 'Compte';
                 selectCategoria.required = true;
                 selectSubcategoria.required = true;
                 selectDestino.required = false;
@@ -191,12 +191,12 @@
         });
         selectCategoria.addEventListener('change', actualizarSubcategorias);
 
-        // Estado inicial al cargar la pagina (tipo = "gasto" por defecto)
+        // Estat inicial en carregar la pagina (tipus = "gasto" per defecte)
         actualizarCategorias();
         aplicarCuentaPredefinida();
 
         /* =========================================================
-           CAMBIAR ENTRE LOS DOS MODOS
+           CANVIAR ENTRE ELS DOS MODES
            ========================================================= */
 
         const modoFormulario = document.getElementById('modo-formulario');
@@ -223,7 +223,7 @@
         btnModoGuiado.addEventListener('click', activarModoGuiado);
 
         /* =========================================================
-           MODO GUIADO (paso a paso, con botones, como el bot de Telegram)
+           MODE GUIAT (pas a pas, amb botons, com el bot de Telegram)
            ========================================================= */
 
         let estadoGuiado = {};
@@ -254,7 +254,7 @@
         }
 
         function formatoEuros(valor) {
-            return valor.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+            return valor.toLocaleString('ca-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
         }
 
         function pintarProgreso() {
@@ -270,8 +270,8 @@
             });
         }
 
-        // Muestra una lista de botones para elegir una opcion. 'lista' es un
-        // array de {texto, valor}; al pulsar uno se llama a onElegir(valor).
+        // Mostra una llista de botons per triar una opcio. 'lista' es un
+        // array de {texto, valor}; en prémer-ne un es crida onElegir(valor).
         function mostrarOpcionesGuiado(lista, onElegir) {
             const contenedorBotones = document.getElementById('guiado-opciones-botones');
             const contenedorInput = document.getElementById('guiado-opciones-input');
@@ -291,8 +291,8 @@
             });
         }
 
-        // Muestra un campo de texto/numero con un boton "Siguiente" (y
-        // "Omitir" si permitirVacio=true). Al confirmar llama a onConfirmar(valor).
+        // Mostra un camp de text/numero amb un boto "Seguent" (i "Ometre"
+        // si permitirVacio=true). En confirmar crida a onConfirmar(valor).
         function mostrarInputGuiado(tipoInput, onConfirmar, permitirVacio) {
             const contenedorBotones = document.getElementById('guiado-opciones-botones');
             const contenedorInput = document.getElementById('guiado-opciones-input');
@@ -309,7 +309,7 @@
             if (tipoInput === 'number') {
                 input.step = '0.01';
                 input.min = '0.01';
-                input.placeholder = 'Ej: 12.50';
+                input.placeholder = 'Ex: 12.50';
             }
             contenedorInput.appendChild(input);
             input.focus();
@@ -321,7 +321,7 @@
 
             const botonSiguiente = document.createElement('button');
             botonSiguiente.type = 'button';
-            botonSiguiente.textContent = 'Siguiente';
+            botonSiguiente.textContent = 'Seguent';
             botonSiguiente.className = 'btn btn-primario';
             botonSiguiente.style.flex = '1';
             botonSiguiente.addEventListener('click', () => onConfirmar(input.value));
@@ -330,7 +330,7 @@
             if (permitirVacio) {
                 const botonOmitir = document.createElement('button');
                 botonOmitir.type = 'button';
-                botonOmitir.textContent = 'Omitir';
+                botonOmitir.textContent = 'Ometre';
                 botonOmitir.className = 'btn';
                 botonOmitir.addEventListener('click', () => onConfirmar(''));
                 filaBotones.appendChild(botonOmitir);
@@ -365,19 +365,19 @@
             resumen.style.display = 'block';
             resumen.innerHTML = '';
 
-            const etiquetaTipo = { gasto: 'Gasto', ingreso: 'Ingreso', transferencia: 'Transferencia' }[estadoGuiado.tipo];
-            resumen.appendChild(crearLineaResumen('Tipo', etiquetaTipo));
-            resumen.appendChild(crearLineaResumen('Importe', formatoEuros(estadoGuiado.monto)));
+            const etiquetaTipo = { gasto: 'Despesa', ingreso: 'Ingres', transferencia: 'Transferencia' }[estadoGuiado.tipo];
+            resumen.appendChild(crearLineaResumen('Tipus', etiquetaTipo));
+            resumen.appendChild(crearLineaResumen('Import', formatoEuros(estadoGuiado.monto)));
 
             if (estadoGuiado.tipo === 'transferencia') {
                 resumen.appendChild(crearLineaResumen('Origen', estadoGuiado.cuenta_nombre));
-                resumen.appendChild(crearLineaResumen('Destino', estadoGuiado.cuenta_destino_nombre));
+                resumen.appendChild(crearLineaResumen('Desti', estadoGuiado.cuenta_destino_nombre));
             } else {
                 resumen.appendChild(crearLineaResumen('Categoria', estadoGuiado.categoria_nombre + ' > ' + estadoGuiado.subcategoria_nombre));
-                resumen.appendChild(crearLineaResumen('Cuenta', estadoGuiado.cuenta_nombre));
+                resumen.appendChild(crearLineaResumen('Compte', estadoGuiado.cuenta_nombre));
             }
             if (estadoGuiado.descripcion) {
-                resumen.appendChild(crearLineaResumen('Descripcion', estadoGuiado.descripcion));
+                resumen.appendChild(crearLineaResumen('Descripcio', estadoGuiado.descripcion));
             }
 
             const botonGuardar = document.createElement('button');
@@ -385,7 +385,7 @@
             botonGuardar.className = 'btn btn-primario';
             botonGuardar.style.width = '100%';
             botonGuardar.style.marginTop = '18px';
-            botonGuardar.textContent = 'Guardar operacion';
+            botonGuardar.textContent = 'Desar operacio';
             botonGuardar.addEventListener('click', () => {
                 document.getElementById('formulario-operacion').requestSubmit();
             });
@@ -401,12 +401,12 @@
             const titulo = document.getElementById('guiado-titulo');
 
             if (estadoGuiado.paso === 'tipo') {
-                titulo.textContent = 'Paso 1';
-                pregunta.textContent = '¿Que quieres registrar?';
+                titulo.textContent = 'Pas 1';
+                pregunta.textContent = 'Que vols registrar?';
                 mostrarOpcionesGuiado([
-                    { texto: 'Gasto', valor: 'gasto' },
-                    { texto: 'Ingreso', valor: 'ingreso' },
-                    { texto: 'Transferencia entre cuentas', valor: 'transferencia' },
+                    { texto: 'Despesa', valor: 'gasto' },
+                    { texto: 'Ingres', valor: 'ingreso' },
+                    { texto: 'Transferencia entre comptes', valor: 'transferencia' },
                 ], (valor) => {
                     estadoGuiado.tipo = valor;
                     selectTipo.value = valor;
@@ -416,12 +416,12 @@
                 });
 
             } else if (estadoGuiado.paso === 'importe') {
-                titulo.textContent = 'Paso 2';
-                pregunta.textContent = '¿Cuanto?';
+                titulo.textContent = 'Pas 2';
+                pregunta.textContent = 'Quant?';
                 mostrarInputGuiado('number', (valorTexto) => {
                     const monto = parseFloat(valorTexto.replace(',', '.'));
                     if (!monto || monto <= 0) {
-                        alert('Escribe un importe valido, mayor que 0.');
+                        alert('Escriu un import valid, mes gran que 0.');
                         return;
                     }
                     estadoGuiado.monto = monto;
@@ -430,8 +430,8 @@
                 }, false);
 
             } else if (estadoGuiado.paso === 'categoria') {
-                titulo.textContent = 'Paso 3';
-                pregunta.textContent = 'Elige una categoria';
+                titulo.textContent = 'Pas 3';
+                pregunta.textContent = 'Tria una categoria';
                 const lista = categorias.filter(cat => cat.tipo === estadoGuiado.tipo);
                 mostrarOpcionesGuiado(lista.map(cat => ({ texto: cat.nombre, valor: cat })), (categoria) => {
                     estadoGuiado.categoria_id = categoria.id;
@@ -442,8 +442,8 @@
                 });
 
             } else if (estadoGuiado.paso === 'subcategoria') {
-                titulo.textContent = 'Paso 4';
-                pregunta.textContent = 'Elige una subcategoria';
+                titulo.textContent = 'Pas 4';
+                pregunta.textContent = 'Tria una subcategoria';
                 const categoria = categorias.find(cat => cat.id === estadoGuiado.categoria_id);
                 const lista = categoria ? categoria.subcategorias : [];
                 mostrarOpcionesGuiado(lista.map(sub => ({ texto: sub.nombre, valor: sub })), (sub) => {
@@ -454,8 +454,8 @@
                 });
 
             } else if (estadoGuiado.paso === 'cuenta') {
-                titulo.textContent = 'Paso 5';
-                pregunta.textContent = '¿De que cuenta?';
+                titulo.textContent = 'Pas 5';
+                pregunta.textContent = 'De quin compte?';
                 mostrarOpcionesGuiado(cuentas.map(c => ({ texto: c.nombre, valor: c })), (cuenta) => {
                     estadoGuiado.cuenta_id = cuenta.id;
                     estadoGuiado.cuenta_nombre = cuenta.nombre;
@@ -464,8 +464,8 @@
                 });
 
             } else if (estadoGuiado.paso === 'cuenta_origen') {
-                titulo.textContent = 'Paso 3';
-                pregunta.textContent = '¿Desde que cuenta sale el dinero?';
+                titulo.textContent = 'Pas 3';
+                pregunta.textContent = 'De quin compte surt el diner?';
                 mostrarOpcionesGuiado(cuentas.map(c => ({ texto: c.nombre, valor: c })), (cuenta) => {
                     estadoGuiado.cuenta_id = cuenta.id;
                     estadoGuiado.cuenta_nombre = cuenta.nombre;
@@ -474,8 +474,8 @@
                 });
 
             } else if (estadoGuiado.paso === 'cuenta_destino') {
-                titulo.textContent = 'Paso 4';
-                pregunta.textContent = '¿A que cuenta llega el dinero?';
+                titulo.textContent = 'Pas 4';
+                pregunta.textContent = 'A quin compte arriba el diner?';
                 const lista = cuentas.filter(c => c.id !== estadoGuiado.cuenta_id);
                 mostrarOpcionesGuiado(lista.map(c => ({ texto: c.nombre, valor: c })), (cuenta) => {
                     estadoGuiado.cuenta_destino_id = cuenta.id;
@@ -485,8 +485,8 @@
                 });
 
             } else if (estadoGuiado.paso === 'descripcion') {
-                titulo.textContent = 'Ultimo paso';
-                pregunta.textContent = '¿Alguna descripcion? (opcional)';
+                titulo.textContent = 'Ultim pas';
+                pregunta.textContent = 'Alguna descripcio? (opcional)';
                 mostrarInputGuiado('text', (valorTexto) => {
                     estadoGuiado.descripcion = valorTexto.trim();
                     document.getElementById('descripcion').value = estadoGuiado.descripcion;
@@ -495,7 +495,7 @@
 
             } else if (estadoGuiado.paso === 'confirmar') {
                 titulo.textContent = 'Confirmar';
-                pregunta.textContent = 'Revisa los datos antes de guardar';
+                pregunta.textContent = 'Revisa les dades abans de desar';
                 mostrarResumenGuiado();
             }
         }

@@ -1,28 +1,28 @@
 {% extends "base.html" %}
-{% block titulo %}Editar operacion{% endblock %}
+{% block titulo %}Editar operacio{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('finanzas_operaciones') }}" class="volver">&larr; Volver al historial</a>
+    <a href="{{ url_for('finanzas_operaciones') }}" class="volver">&larr; Tornar a l'historial</a>
 
     <span class="eyebrow">Editar</span>
-    <h1>Operacion</h1>
-    <p class="subtitle">Cambia lo que haga falta; el saldo de las cuentas se ajusta solo</p>
+    <h1>Operacio</h1>
+    <p class="subtitle">Canvia el que calgui; el saldo dels comptes s'ajusta sol</p>
 
     <div class="card">
         <form method="POST" id="formulario-operacion">
             <input type="hidden" name="origen" value="{{ origen }}">
             <div class="campo">
-                <label for="tipo">Tipo de operacion</label>
+                <label for="tipo">Tipus d'operacio</label>
                 <select id="tipo" name="tipo" required>
-                    <option value="gasto" {{ 'selected' if operacion['tipo'] == 'gasto' else '' }}>Gasto</option>
-                    <option value="ingreso" {{ 'selected' if operacion['tipo'] == 'ingreso' else '' }}>Ingreso</option>
-                    <option value="transferencia" {{ 'selected' if operacion['tipo'] == 'transferencia' else '' }}>Transferencia entre cuentas</option>
+                    <option value="gasto" {{ 'selected' if operacion['tipo'] == 'gasto' else '' }}>Despesa</option>
+                    <option value="ingreso" {{ 'selected' if operacion['tipo'] == 'ingreso' else '' }}>Ingres</option>
+                    <option value="transferencia" {{ 'selected' if operacion['tipo'] == 'transferencia' else '' }}>Transferencia entre comptes</option>
                 </select>
             </div>
 
             <div class="campo">
-                <label id="etiqueta-cuenta" for="cuenta_id">Cuenta</label>
+                <label id="etiqueta-cuenta" for="cuenta_id">Compte</label>
                 <select id="cuenta_id" name="cuenta_id" required>
                     {% for cuenta in cuentas %}
                         <option value="{{ cuenta['id'] }}" {{ 'selected' if cuenta['id'] == operacion['cuenta_id'] else '' }}>{{ cuenta['nombre'] }}</option>
@@ -31,7 +31,7 @@
             </div>
 
             <div class="campo" id="campo-destino" style="display:none;">
-                <label for="cuenta_destino_id">Cuenta destino</label>
+                <label for="cuenta_destino_id">Compte desti</label>
                 <select id="cuenta_destino_id" name="cuenta_destino_id">
                     {% for cuenta in cuentas %}
                         <option value="{{ cuenta['id'] }}" {{ 'selected' if cuenta['id'] == operacion['cuenta_destino_id'] else '' }}>{{ cuenta['nombre'] }}</option>
@@ -50,27 +50,27 @@
             </div>
 
             <div class="campo">
-                <label for="monto">Importe (€)</label>
+                <label for="monto">Import (€)</label>
                 <input type="number" id="monto" name="monto" step="0.01" min="0.01" value="{{ operacion['monto'] }}" required>
             </div>
 
             <div class="campo">
-                <label for="fecha">Fecha</label>
+                <label for="fecha">Data</label>
                 <input type="date" id="fecha" name="fecha" value="{{ operacion['fecha'] }}" required>
             </div>
 
             <div class="campo">
-                <label for="descripcion">Descripcion (opcional)</label>
+                <label for="descripcion">Descripcio (opcional)</label>
                 <input type="text" id="descripcion" name="descripcion" value="{{ operacion['descripcion'] or '' }}">
             </div>
 
-            <button type="submit">Guardar cambios</button>
+            <button type="submit">Desar els canvis</button>
         </form>
     </div>
 
     <script>
-        // Categorias del usuario (con sus subcategorias) y los valores que
-        // tenia esta operacion guardados, para dejarlos ya seleccionados.
+        // Categories de l'usuari (amb les seves subcategories) i els valors
+        // que tenia guardats aquesta operacio, per deixar-los ja seleccionats.
         const categorias = {{ categorias | tojson }};
         const categoriaActual = {{ operacion['categoria_id'] | tojson }};
         const subcategoriaActual = {{ operacion['subcategoria_id'] | tojson }};
@@ -92,7 +92,7 @@
                 campoCategoria.style.display = 'none';
                 campoSubcategoria.style.display = 'none';
                 campoDestino.style.display = 'block';
-                etiquetaCuenta.textContent = 'Cuenta origen';
+                etiquetaCuenta.textContent = 'Compte origen';
                 selectCategoria.required = false;
                 selectSubcategoria.required = false;
                 selectDestino.required = true;
@@ -100,7 +100,7 @@
                 campoCategoria.style.display = 'block';
                 campoSubcategoria.style.display = 'block';
                 campoDestino.style.display = 'none';
-                etiquetaCuenta.textContent = 'Cuenta';
+                etiquetaCuenta.textContent = 'Compte';
                 selectCategoria.required = true;
                 selectSubcategoria.required = true;
                 selectDestino.required = false;
@@ -143,8 +143,8 @@
         selectTipo.addEventListener('change', () => actualizarCategorias(false));
         selectCategoria.addEventListener('change', () => actualizarSubcategorias(false));
 
-        // Estado inicial al cargar la pagina: dejamos seleccionados la
-        // categoria y la subcategoria que ya tenia guardados la operacion.
+        // Estat inicial en carregar la pagina: deixem seleccionades la
+        // categoria i la subcategoria que ja tenia guardades l'operacio.
         actualizarCategorias(true);
     </script>
 {% endblock %}

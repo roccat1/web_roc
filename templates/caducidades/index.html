@@ -1,32 +1,32 @@
 {% extends "base.html" %}
-{% block titulo %}Caducidades{% endblock %}
+{% block titulo %}Caducitats{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
     <div class="pin-row">
         <span></span><span></span><span></span><span></span><span></span>
     </div>
-    <span class="eyebrow">Recordatorios</span>
-    <h1 style="text-align:center;">Fechas de caducidad</h1>
-    <p class="subtitle">Documentacion, mantenimiento del coche, seguros... lo que quieras controlar</p>
+    <span class="eyebrow">Recordatoris</span>
+    <h1 style="text-align:center;">Dates de caducitat</h1>
+    <p class="subtitle">Documentacio, manteniment del cotxe, assegurances... el que vulguis controlar</p>
 
     <div class="header-finanzas" style="margin-top:20px;">
         <div class="acciones">
-            <a href="{{ url_for('caducidades_nueva') }}" class="btn btn-primario">+ Nuevo registro</a>
+            <a href="{{ url_for('caducidades_nueva') }}" class="btn btn-primario">+ Nou registre</a>
         </div>
     </div>
 
     <div class="kpis">
         <div class="kpi-card">
-            <span class="etiqueta">Caducadas</span>
+            <span class="etiqueta">Caducades</span>
             <div class="cifra caducado">{{ resumen.caducado }}</div>
         </div>
         <div class="kpi-card">
-            <span class="etiqueta">Proximas</span>
+            <span class="etiqueta">Properes</span>
             <div class="cifra proximo">{{ resumen.proximo }}</div>
         </div>
         <div class="kpi-card">
-            <span class="etiqueta">Vigentes</span>
+            <span class="etiqueta">Vigents</span>
             <div class="cifra vigente">{{ resumen.vigente }}</div>
         </div>
     </div>
@@ -34,19 +34,19 @@
     {% if total_items > 0 %}
         <form method="GET" class="form-linea filtro-analisis">
             <div class="campo">
-                <label for="estado">Estado</label>
+                <label for="estado">Estat</label>
                 <select id="estado" name="estado" onchange="this.form.submit()">
-                    <option value="">Todos</option>
-                    <option value="caducado" {{ 'selected' if estado_filtro == 'caducado' else '' }}>Caducadas</option>
-                    <option value="proximo" {{ 'selected' if estado_filtro == 'proximo' else '' }}>Proximas</option>
-                    <option value="vigente" {{ 'selected' if estado_filtro == 'vigente' else '' }}>Vigentes</option>
+                    <option value="">Tots</option>
+                    <option value="caducado" {{ 'selected' if estado_filtro == 'caducado' else '' }}>Caducades</option>
+                    <option value="proximo" {{ 'selected' if estado_filtro == 'proximo' else '' }}>Properes</option>
+                    <option value="vigente" {{ 'selected' if estado_filtro == 'vigente' else '' }}>Vigents</option>
                 </select>
             </div>
             {% if categorias_usadas %}
                 <div class="campo">
                     <label for="categoria">Categoria</label>
                     <select id="categoria" name="categoria" onchange="this.form.submit()">
-                        <option value="">Todas</option>
+                        <option value="">Totes</option>
                         {% for cat in categorias_usadas %}
                             <option value="{{ cat }}" {{ 'selected' if categoria_filtro == cat else '' }}>{{ cat }}</option>
                         {% endfor %}
@@ -63,10 +63,10 @@
                 <thead>
                     <tr>
                         <th></th>
-                        <th>Nombre</th>
+                        <th>Nom</th>
                         <th>Categoria</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
+                        <th>Data</th>
+                        <th>Estat</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -76,7 +76,7 @@
                             <td><span class="led {{ item.led }}"></span></td>
                             <td>
                                 {{ item.nombre }}
-                                {% if item.dias_revalidacion %}<br><span class="tag">Revalida cada {{ item.dias_revalidacion }} dias</span>{% endif %}
+                                {% if item.dias_revalidacion %}<br><span class="tag">Revalida cada {{ item.dias_revalidacion }} dies</span>{% endif %}
                                 {% if item.notas %}<br><span class="tag">{{ item.notas }}</span>{% endif %}
                             </td>
                             <td><span class="badge">{{ item.categoria }}</span></td>
@@ -90,7 +90,7 @@
                                 {% endif %}
                                 <a href="{{ url_for('caducidades_editar', caducidad_id=item.id) }}" class="btn btn-pequeno">Editar</a>
                                 <form method="POST" action="{{ url_for('caducidades_eliminar', caducidad_id=item.id) }}"
-                                      style="display:inline;" onsubmit="return confirm('¿Eliminar {{ item.nombre }}?');">
+                                      style="display:inline;" onsubmit="return confirm('Vols eliminar {{ item.nombre }}?');">
                                     <button type="submit" class="btn btn-peligro">Eliminar</button>
                                 </form>
                             </td>
@@ -100,11 +100,11 @@
             </table>
         </div>
     {% elif total_items > 0 %}
-        <p class="vacio">Ningun registro coincide con el filtro elegido.</p>
+        <p class="vacio">Cap registre coincideix amb el filtre triat.</p>
     {% else %}
         <p class="vacio">
-            Aun no has anadido ninguna fecha de caducidad.
-            <a href="{{ url_for('caducidades_nueva') }}" style="color: var(--green);">Anade la primera aqui</a>.
+            Encara no has afegit cap data de caducitat.
+            <a href="{{ url_for('caducidades_nueva') }}" style="color: var(--green);">Afegeix la primera aqui</a>.
         </p>
     {% endif %}
 {% endblock %}

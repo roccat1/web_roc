@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Importar calendari{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Tornar al calendari</a>
+
+    <span class="eyebrow">Importar</span>
+    <h1>Importar un fitxer .ics</h1>
+    <p class="subtitle">Per portar esdeveniments de Google Calendar, Apple Calendar o similars</p>
+
+    <div class="card">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="campo">
+                <label for="fichero">Fitxer .ics</label>
+                <input type="file" id="fichero" name="fichero" accept=".ics,text/calendar" required>
+            </div>
+            <button type="submit">Importar</button>
+        </form>
+
+        <p class="tag" style="margin: 16px 0 0;">
+            S'importaran com a nous esdeveniments (sense categoria; ja els podras classificar despres).
+            Les repeticions simples (diaria, setmanal, mensual, anual) es respecten; les regles mes
+            complexes s'importen com un unic esdeveniment en la data d'inici, i s'avisara d'aixo.
+        </p>
+    </div>
+{% endblock %}

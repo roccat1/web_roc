@@ -1,70 +1,98 @@
 {% extends "base.html" %}
-{% block titulo %}Nuevo evento{% endblock %}
+{% block titulo %}Nou esdeveniment{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('calendario') }}" class="volver">&larr; Volver al calendario</a>
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Tornar al calendari</a>
 
     <div class="pin-row">
         <span></span><span></span><span></span><span></span><span></span>
     </div>
-    <span class="eyebrow">Nuevo</span>
-    <h1>Nuevo evento</h1>
-    <p class="subtitle">Citas, quedadas, cumpleanos, recordatorios...</p>
+    <span class="eyebrow">Nou</span>
+    <h1>Nou esdeveniment</h1>
+    <p class="subtitle">Cites, quedades, aniversaris, recordatoris...</p>
 
     <div class="card">
         <form method="POST" id="formulario-evento">
             <div class="campo">
-                <label for="titulo">Titulo</label>
-                <input type="text" id="titulo" name="titulo" placeholder="Ej: Cena con Marta" required autofocus>
+                <label for="titulo">Titol</label>
+                <input type="text" id="titulo" name="titulo" placeholder="Ex: Sopar amb Marta" required autofocus>
             </div>
 
             <div class="campo">
-                <label for="categoria_id">Categoria</label>
+                <label for="categoria_id">Categoria principal</label>
                 <select id="categoria_id" name="categoria_id">
-                    <option value="">Sin categoria</option>
+                    <option value="">Sense categoria</option>
                     {% for cat in categorias %}
                         <option value="{{ cat.id }}">{{ cat.nombre }}</option>
                     {% endfor %}
                 </select>
                 {% if not categorias %}
                     <p class="tag" style="margin: 6px 0 0;">
-                        Puedes <a href="{{ url_for('calendario_categorias') }}" style="color: var(--green);">crear categorias</a> para organizar mejor tus eventos (opcional).
+                        Pots <a href="{{ url_for('calendario_categorias') }}" style="color: var(--green);">crear categories</a> per organitzar millor els teus esdeveniments (opcional).
                     </p>
                 {% endif %}
             </div>
 
+            {% if categorias|length > 1 %}
+                <div class="campo">
+                    <label>Etiquetes addicionals (opcional)</label>
+                    <div class="selector-chips">
+                        {% for cat in categorias %}
+                            <span class="chip">
+                                <input type="checkbox" id="catextra-{{ cat.id }}" name="categorias_extra" value="{{ cat.id }}">
+                                <label for="catextra-{{ cat.id }}" class="chip-etiqueta">
+                                    <span class="cat-dot cat-{{ cat.color }}"></span>{{ cat.nombre }}
+                                </label>
+                            </span>
+                        {% endfor %}
+                    </div>
+                    <p class="tag" style="margin: 6px 0 0;">
+                        Pots triar-ne mes d'una. La categoria principal no cal repetir-la aqui.
+                    </p>
+                </div>
+            {% endif %}
+
             <div class="campo">
-                <label for="fecha">Fecha</label>
+                <label for="fecha">Data</label>
                 <input type="date" id="fecha" name="fecha" value="{{ fecha_preseleccionada }}" required>
             </div>
 
             <div class="campo campo-checkbox">
-                <input type="checkbox" id="todo_el_dia" name="todo_el_dia" checked>
-                <label for="todo_el_dia">Todo el dia (sin hora concreta)</label>
+                <input type="checkbox" id="todo_el_dia" name="todo_el_dia">
+                <label for="todo_el_dia">Tot el dia (sense hora concreta)</label>
             </div>
 
-            <div class="campo" id="campo-hora" style="display:none;">
+            <div class="campo" id="campo-hora">
                 <label for="hora">Hora</label>
                 <input type="time" id="hora" name="hora">
             </div>
 
             <div class="campo">
-                <label for="lugar">Lugar (opcional)</label>
-                <input type="text" id="lugar" name="lugar" placeholder="Ej: Casa de Marta">
+                <label for="lugar">Lloc (opcional)</label>
+                <input type="text" id="lugar" name="lugar" placeholder="Ex: Casa de la Marta">
             </div>
 
             <div class="campo">
-                <label for="descripcion">Descripcion (opcional)</label>
+                <label for="descripcion">Descripcio (opcional)</label>
                 <input type="text" id="descripcion" name="descripcion">
             </div>
 
             <div class="campo">
-                <label for="recordatorio_dias">Avisar con antelacion (dias)</label>
-                <input type="number" id="recordatorio_dias" name="recordatorio_dias" value="0" min="0">
+                <label>Avisar amb antelacio</label>
+                <div class="selector-recordatoris">
+                    {% for dias in umbrales_sugeridos %}
+                        <span class="opcion-recordatori">
+                            <input type="checkbox" id="rec-{{ dias }}" name="recordatorios" value="{{ dias }}" {{ 'checked' if dias in umbrales_marcados else '' }}>
+                            <label for="rec-{{ dias }}">{{ 'El mateix dia' if dias == 0 else dias ~ ' dies abans' }}</label>
+                        </span>
+                    {% endfor %}
+                </div>
+                <label for="recordatorio_extra" style="margin-top:10px;">Un altre avis, en dies (opcional)</label>
+                <input type="number" id="recordatorio_extra" name="recordatorio_extra" min="0" placeholder="Ex: 60">
                 <p class="tag" style="margin: 6px 0 0;">
-                    0 = avisar el mismo dia del evento. Si tienes el bot de Telegram
-                    vinculado, te llegara un mensaje cuando toque.
+                    Pots marcar mes d'un avis (ex: 7 dies abans i tambe el mateix dia). Si tens el bot
+                    de Telegram vinculat, et arribara un missatge per a cada un quan toqui.
                 </p>
             </div>
 
@@ -72,18 +100,18 @@
                 <label for="repetir">Repetir</label>
                 <select id="repetir" name="repetir">
                     {% for opcion in opciones_repeticion %}
-                        <option value="{{ opcion }}">{{ opcion | capitalize }}</option>
+                        <option value="{{ opcion }}">{{ {'ninguna': 'Cap', 'diaria': 'Diaria', 'semanal': 'Setmanal', 'mensual': 'Mensual', 'anual': 'Anual'}[opcion] }}</option>
                     {% endfor %}
                 </select>
             </div>
 
             <div class="campo" id="campo-repetir-hasta" style="display:none;">
-                <label for="repetir_hasta">Repetir hasta (opcional)</label>
+                <label for="repetir_hasta">Repetir fins (opcional)</label>
                 <input type="date" id="repetir_hasta" name="repetir_hasta">
-                <p class="tag" style="margin: 6px 0 0;">Si lo dejas en blanco, se repite indefinidamente.</p>
+                <p class="tag" style="margin: 6px 0 0;">Si ho deixes en blanc, es repeteix indefinidament.</p>
             </div>
 
-            <button type="submit">Guardar</button>
+            <button type="submit">Desar</button>
         </form>
     </div>
 

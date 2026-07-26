@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block titulo %}Calendario{% endblock %}
+{% block titulo %}Calendari{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
@@ -7,14 +7,18 @@
         <span></span><span></span><span></span><span></span><span></span>
     </div>
     <span class="eyebrow">Agenda</span>
-    <h1 style="text-align:center;">Calendario</h1>
-    <p class="subtitle">Eventos, citas y recordatorios, organizados por categoria</p>
+    <h1 style="text-align:center;">Calendari</h1>
+    <p class="subtitle">Esdeveniments, cites i recordatoris, organitzats per categoria</p>
 
     <div class="header-finanzas">
         <div class="acciones">
-            <a href="{{ url_for('calendario_nuevo') }}" class="btn btn-primario">+ Nuevo evento</a>
-            <a href="{{ url_for('calendario_lista') }}" class="btn btn-pequeno">Ver como lista</a>
-            <a href="{{ url_for('calendario_categorias') }}" class="btn btn-pequeno">Categorias</a>
+            <a href="{{ url_for('calendario_nuevo') }}" class="btn btn-primario">+ Nou esdeveniment</a>
+            <a href="{{ url_for('calendario_semana') }}" class="btn btn-pequeno">Setmana</a>
+            <a href="{{ url_for('calendario_lista') }}" class="btn btn-pequeno">Llista</a>
+            <a href="{{ url_for('agenda') }}" class="btn btn-pequeno">Agenda</a>
+            <a href="{{ url_for('calendario_categorias') }}" class="btn btn-pequeno">Categories</a>
+            <a href="{{ url_for('calendario_exportar_ics') }}" class="btn btn-pequeno">Exportar .ics</a>
+            <a href="{{ url_for('calendario_importar') }}" class="btn btn-pequeno">Importar .ics</a>
         </div>
     </div>
 
@@ -26,7 +30,7 @@
 
     {% if not es_mes_actual %}
         <p style="text-align:center; margin: -12px 0 20px;">
-            <a href="{{ url_for('calendario') }}" style="color: var(--green); font-family: var(--font-mono); font-size:12px; text-decoration:none;">Ir al mes actual</a>
+            <a href="{{ url_for('calendario') }}" style="color: var(--green); font-family: var(--font-mono); font-size:12px; text-decoration:none;">Anar al mes actual</a>
         </p>
     {% endif %}
 
@@ -41,19 +45,24 @@
                     <div class="calendario-dia vacio"></div>
                 {% else %}
                     <div class="calendario-dia {{ 'hoy' if dia.es_hoy else '' }}">
-                        <a href="{{ url_for('calendario_nuevo', fecha='%04d-%02d-%02d' % (anio, mes, dia.numero)) }}">
-                            <span class="numero-dia">{{ dia.numero }}</span>
-                            {% if dia.eventos %}
+                        {% if dia.eventos %}
+                            <a href="{{ url_for('calendario_dia', fecha=dia.fecha) }}">
+                                <span class="numero-dia">{{ dia.numero }}</span>
                                 <span class="mini-puntos">
                                     {% for evento in dia.eventos[:4] %}
-                                        <span class="cat-dot cat-{{ evento.categoria_color }}"></span>
+                                        <span class="cat-dot cat-{{ evento.categoria_color }}"
+                                              title="{{ evento.titulo }}{% if evento.hora %} · {{ evento.hora }}{% endif %}"></span>
                                     {% endfor %}
                                     {% if dia.eventos | length > 4 %}
                                         <span class="mini-mas">+{{ dia.eventos | length - 4 }}</span>
                                     {% endif %}
                                 </span>
-                            {% endif %}
-                        </a>
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('calendario_nuevo', fecha=dia.fecha) }}" title="Afegir un esdeveniment aquest dia">
+                                <span class="numero-dia">{{ dia.numero }}</span>
+                            </a>
+                        {% endif %}
                     </div>
                 {% endif %}
             {% endfor %}
@@ -61,11 +70,11 @@
     </div>
 
     <p class="tag" style="text-align:center; margin: 4px 0 32px;">
-        Toca un dia para anadir un evento en esa fecha
+        Un dia amb punts obre els seus esdeveniments; un dia buit n'afegeix un de nou
     </p>
 
     <h2 style="font-family: var(--font-mono); font-size:14px; letter-spacing:1px; text-transform:uppercase;">
-        Proximos eventos
+        Propers esdeveniments
     </h2>
 
     {% if proximos_eventos %}
@@ -77,11 +86,15 @@
                         <div class="evento-titulo">
                             {{ evento.titulo }}
                             {% if evento.repetir != 'ninguna' %}<span class="tag">&#8635;</span>{% endif %}
+                            {% if evento.es_excepcio %}<span class="tag">editat</span>{% endif %}
                         </div>
                         <div class="evento-meta">
                             {{ evento.fecha_ocurrencia }}{% if evento.hora %} &middot; {{ evento.hora }}{% endif %}
                             &middot; {{ evento.categoria_nombre }}
                             &middot; <span class="dias-restantes {{ evento.estado }}">{{ evento.texto_estado }}</span>
+                            {% if evento.estado == 'proximo' %}
+                                &middot; <span class="tag" title="Avisos configurats per a aquest esdeveniment">avisa {{ evento.umbrales_recordatorio | sort(reverse=true) | join(', ') }} dies abans</span>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="evento-acciones">
@@ -92,8 +105,8 @@
         </div>
     {% else %}
         <p class="vacio">
-            No tienes eventos proximos.
-            <a href="{{ url_for('calendario_nuevo') }}" style="color: var(--green);">Anade el primero aqui</a>.
+            No tens cap esdeveniment proper.
+            <a href="{{ url_for('calendario_nuevo') }}" style="color: var(--green);">Afegeix el primer aqui</a>.
         </p>
     {% endif %}
 {% endblock %}

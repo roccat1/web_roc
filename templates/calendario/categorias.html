@@ -1,24 +1,28 @@
 {% extends "base.html" %}
-{% block titulo %}Categorias del calendario{% endblock %}
+{% block titulo %}Categories del calendari{% endblock %}
 {% block main_class %}ancho{% endblock %}
 
 {% block contenido %}
-    <a href="{{ url_for('calendario') }}" class="volver">&larr; Volver al calendario</a>
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Tornar al calendari</a>
 
-    <span class="eyebrow">Organizacion</span>
-    <h1>Categorias del calendario</h1>
-    <p class="subtitle">Cada evento se puede clasificar con una de estas (opcional)</p>
+    <span class="eyebrow">Organitzacio</span>
+    <h1>Categories del calendari</h1>
+    <p class="subtitle">Cada esdeveniment es pot classificar amb una d'aquestes (opcional)</p>
 
     {% if categorias %}
         <div class="card">
             <div class="lista-categorias-calendario">
                 {% for cat in categorias %}
+                    {% set total = conteo_eventos.get(cat.id, 0) %}
                     <div class="categoria-calendario-fila">
                         <span class="cat-dot cat-{{ cat.color }}"></span>
-                        <span class="nombre">{{ cat.nombre }}</span>
+                        <span class="nombre">
+                            {{ cat.nombre }}
+                            {% if total %}<span class="tag">{{ total }} esdeveniment{{ 's' if total != 1 else '' }}</span>{% endif %}
+                        </span>
                         <a href="{{ url_for('calendario_editar_categoria', categoria_id=cat.id) }}" class="btn btn-pequeno">Editar</a>
                         <form method="POST" action="{{ url_for('calendario_eliminar_categoria', categoria_id=cat.id) }}"
-                              onsubmit="return confirm('¿Eliminar la categoria {{ cat.nombre }}? Los eventos que la usan se quedaran sin categoria.');">
+                              onsubmit="return confirm('{% if total %}{{ total }} esdeveniment{{ 's' if total != 1 else '' }} fan servir «{{ cat.nombre }}». Si l\'elimines, es quedaran sense aquesta categoria (no s\'esborraran). Vols continuar?{% else %}Vols eliminar la categoria {{ cat.nombre }}?{% endif %}');">
                             <button type="submit" class="btn btn-peligro">Eliminar</button>
                         </form>
                     </div>
@@ -26,15 +30,15 @@
             </div>
         </div>
     {% else %}
-        <p class="vacio">Aun no has creado ninguna categoria.</p>
+        <p class="vacio">Encara no has creat cap categoria.</p>
     {% endif %}
 
     <div class="card">
-        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Nueva categoria</h2>
+        <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Nova categoria</h2>
         <form method="POST" action="{{ url_for('calendario_nueva_categoria') }}">
             <div class="campo">
-                <label for="nombre">Nombre</label>
-                <input type="text" id="nombre" name="nombre" placeholder="Ej: Trabajo" required autofocus>
+                <label for="nombre">Nom</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ex: Feina" required autofocus>
             </div>
             <div class="campo">
                 <label>Color</label>
