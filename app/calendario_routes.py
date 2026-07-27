@@ -36,6 +36,7 @@ from .calendario_helpers import (
     importar_ics,
     UMBRALES_RECORDATORIO_SUGERIDOS,
 )
+from .google_calendar_helpers import push_evento, push_excepcion, eliminar_evento_remoto, obtener_calendarios_vinculados
 
 NOMBRES_MESES_CALENDARIO = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -69,6 +70,25 @@ def _formatear_rango_semana(lunes, domingo):
 def _guardar_recordatorios_y_categorias(evento_id, datos, usuario_id):
     guardar_umbrales_recordatorio(evento_id, datos["recordatorios_dias"])
     guardar_categorias_extra(evento_id, datos["categorias_extra"], usuario_id)
+
+
+def _sincronizar_con_google(evento_id):
+    """Intenta reflejar el evento en Google Calendar al momento (si su
+    categoria esta vinculada a un calendario sincronizado). Si falla
+    (sin conexion, token caducado...) no interrumpe la web: el evento
+    se guarda igual, y el ciclo periodico en segundo plano lo reintenta
+    mas tarde."""
+    try:
+        push_evento(evento_id)
+    except Exception as error:
+        print(f"[google-sync] No s'ha pogut sincronitzar l'esdeveniment {evento_id} amb Google: {error}")
+
+
+def _sincronizar_ocurrencia_con_google(evento_id, fecha):
+    try:
+        push_excepcion(evento_id, fecha)
+    except Exception as error:
+        print(f"[google-sync] No s'ha pogut sincronitzar l'ocurrencia del {fecha} (evento {evento_id}) amb Google: {error}")
 
 
 @app.route("/calendario")
@@ -257,6 +277,7 @@ def calendario_nuevo():
         conn.close()
 
         _guardar_recordatorios_y_categorias(evento_id, datos, usuario_id)
+        _sincronizar_con_google(evento_id)
 
         flash(f"'{datos['titulo']}' afegit al calendari.")
         return redirect(url_for("calendario"))
@@ -309,6 +330,7 @@ def calendario_editar(evento_id):
         conn.close()
 
         _guardar_recordatorios_y_categorias(evento_id, datos, usuario_id)
+        _sincronizar_con_google(evento_id)
 
         flash("Esdeveniment actualitzat.")
         return redirect(url_for("calendario"))
@@ -333,6 +355,12 @@ def calendario_eliminar(evento_id):
     if evento is None:
         flash("Aquest esdeveniment no existeix.")
         return redirect(url_for("calendario"))
+
+    if evento["google_event_id"]:
+        try:
+            eliminar_evento_remoto(usuario_id, evento["google_calendario_id"], evento["google_event_id"])
+        except Exception as error:
+            print(f"[google-sync] No s'ha pogut eliminar l'esdeveniment {evento_id} a Google: {error}")
 
     conn = get_db_connection()
     conn.execute("DELETE FROM calendario_evento_categorias WHERE evento_id = ?", (evento_id,))
@@ -366,6 +394,7 @@ def calendario_ocurrencia_cancelar(evento_id, fecha):
         return redirect(url_for("calendario"))
 
     guardar_excepcion_cancelada(evento_id, fecha)
+    _sincronizar_ocurrencia_con_google(evento_id, fecha)
     flash(f"S'ha cancel·lat nomes l'ocurrencia del {fecha} de «{evento['titulo']}».")
     return redirect(url_for("calendario_dia", fecha=fecha))
 
@@ -395,6 +424,7 @@ def calendario_ocurrencia_editar(evento_id, fecha):
             evento_id, fecha, datos["titulo"], datos["hora"], datos["todo_el_dia"],
             datos["lugar"], datos["descripcion"],
         )
+        _sincronizar_ocurrencia_con_google(evento_id, fecha)
         flash(f"S'ha actualitzat nomes l'ocurrencia del {fecha}.")
         return redirect(url_for("calendario_dia", fecha=fecha))
 
@@ -417,6 +447,10 @@ def calendario_ocurrencia_restaurar(evento_id, fecha):
         flash("Aquest esdeveniment no existeix.")
         return redirect(url_for("calendario"))
 
+    # Nota: esto no se refleja en Google Calendar (si el evento esta
+    # sincronizado). Recrear alla una ocurrencia que se habia cancelado
+    # o editado requeriria logica adicional que, de momento, no esta
+    # implementada; la ocurrencia se restaura solo en la app.
     eliminar_excepcion(evento_id, fecha)
     flash("S'ha restaurat aquesta ocurrencia tal com era a la serie.")
     return redirect(url_for("calendario_dia", fecha=fecha))
@@ -475,11 +509,15 @@ def calendario_importar():
 @login_requerido
 def calendario_categorias():
     usuario_id = session["usuario_id"]
+    categorias_google = {
+        c["categoria_id"] for c in obtener_calendarios_vinculados(usuario_id) if c["categoria_id"] is not None
+    }
     return render_template(
         "calendario/categorias.html",
         categorias=obtener_categorias_calendario(usuario_id),
         colores=COLORES_CALENDARIO,
         conteo_eventos=contar_eventos_por_categoria(usuario_id),
+        categorias_google=categorias_google,
     )
 
 
@@ -558,6 +596,13 @@ def calendario_eliminar_categoria(categoria_id):
     # etiqueta visual, no un dato imprescindible.
     conn.execute("UPDATE calendario_eventos SET categoria_id = NULL WHERE categoria_id = ?", (categoria_id,))
     conn.execute("DELETE FROM calendario_evento_categorias WHERE categoria_id = ?", (categoria_id,))
+    # Si esta categoria venia de un calendario de Google vinculado, ese
+    # calendario se pone en pausa (deja de sincronizarse) en vez de
+    # quedarse apuntando a una categoria que ya no existe.
+    conn.execute(
+        "UPDATE calendario_google_calendarios SET categoria_id = NULL, sync_activo = 0 WHERE categoria_id = ?",
+        (categoria_id,),
+    )
     conn.execute("DELETE FROM calendario_categorias WHERE id = ?", (categoria_id,))
     conn.commit()
     conn.close()

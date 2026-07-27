@@ -9,6 +9,12 @@
     <h1>Categories del calendari</h1>
     <p class="subtitle">Cada esdeveniment es pot classificar amb una d'aquestes (opcional)</p>
 
+    <p class="tag">
+        <a href="{{ url_for('calendario_google') }}">Gestionar Google Calendar &rarr;</a>
+        Les categories amb 🔗 venen d'un calendari de Google vinculat; si les elimines, aquell
+        calendari deixa de sincronitzar-se.
+    </p>
+
     {% if categorias %}
         <div class="card">
             <div class="lista-categorias-calendario">
@@ -19,6 +25,7 @@
                         <span class="nombre">
                             {{ cat.nombre }}
                             {% if total %}<span class="tag">{{ total }} esdeveniment{{ 's' if total != 1 else '' }}</span>{% endif %}
+                            {% if cat.id in categorias_google %}<span class="tag">🔗 Google Calendar</span>{% endif %}
                         </span>
                         <a href="{{ url_for('calendario_editar_categoria', categoria_id=cat.id) }}" class="btn btn-pequeno">Editar</a>
                         <form method="POST" action="{{ url_for('calendario_eliminar_categoria', categoria_id=cat.id) }}"

@@ -113,3 +113,18 @@ try:
 except (ValueError, AttributeError):
     print(f'Aviso: TELEGRAM_AVISO_HORA="{_aviso_hora_texto}" no es valido, usando 09:00 en su lugar.')
     TELEGRAM_AVISO_HORA = time(hour=9, minute=0, tzinfo=TELEGRAM_TIMEZONE)
+
+# =================================================================
+# Google Calendar (sincronizacion, seccion Calendario)
+# =================================================================
+
+# Credenciales del proyecto de Google Cloud (tipo "Aplicacion web", con
+# la Google Calendar API activada). Sin esto, el boton "Conectar con
+# Google" solo avisa de que falta configurarlo; el resto de la app
+# funciona igual. Ver el README para los pasos para crearlas.
+GOOGLE_CLIENT_ID = _texto("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = _texto("GOOGLE_CLIENT_SECRET", "")
+
+# Cada cuantos minutos se revisan, en segundo plano, los cambios
+# pendientes de subir y bajar con los calendarios de Google vinculados.
+GOOGLE_SYNC_INTERVALO_MINUTOS = _entero("GOOGLE_SYNC_INTERVALO_MINUTOS", 15)

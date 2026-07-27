@@ -53,6 +53,8 @@ flask_login_app/
 │   ├── caducidades_routes.py        <- listado, alta, edicion, borrado, revalidar
 │   ├── calendario_helpers.py        <- ocurrencias de eventos (incl. recurrentes), estado, validacion
 │   ├── calendario_routes.py         <- vista mensual, vista de lista, alta, edicion, borrado, categorias
+│   ├── google_calendar_helpers.py   <- OAuth, subida y bajada de eventos con Google Calendar
+│   ├── calendario_google_routes.py  <- conectar/desconectar cuenta, elegir calendarios a sincronizar
 │   ├── caca_helpers.py              <- lectura de registros y perfiles visibles
 │   ├── caca_routes.py               <- registrar, historial, estadisticas, privacidad
 │   ├── telegram_helpers.py          <- vincular/desvincular (las usa tambien bot.py)
@@ -89,7 +91,9 @@ flask_login_app/
     │   ├── nuevo.html                 <- formulario para anadir un evento
     │   ├── editar.html                <- formulario para editar / eliminar un evento
     │   ├── categorias.html            <- listado y creacion de categorias del calendario
-    │   └── editar_categoria.html      <- formulario para editar una categoria
+    │   ├── editar_categoria.html      <- formulario para editar una categoria
+    │   ├── google.html                <- estado de la conexion con Google Calendar
+    │   └── google_calendarios.html    <- elegir que calendarios de Google sincronizar
     └── caca/
         ├── index.html                <- registrar ahora, formulario manual, historial
         └── estadisticas.html          <- KPIs, grafico y privacidad publico/privado
@@ -123,8 +127,11 @@ valores por defecto de abajo, para que la app funcione igualmente.
 | `SESSION_COOKIE_SECURE` | Cookie de sesion solo por HTTPS (`True`/`False`) | `False` |
 | `DETRAS_DE_PROXY` | La web esta detras de ngrok/Nginx/etc. (`True`/`False`) | `False` |
 | `TELEGRAM_BOT_TOKEN` | Token del bot, te lo da @BotFather | (vacio; el bot no arranca sin esto) |
-| `TELEGRAM_TIMEZONE` | Zona horaria del aviso diario de caducidades | `Europe/Madrid` |
+| `TELEGRAM_TIMEZONE` | Zona horaria del aviso diario de caducidades (y de los eventos que se suben a Google Calendar) | `Europe/Madrid` |
 | `TELEGRAM_AVISO_HORA` | Hora del aviso diario (formato `HH:MM`) | `09:00` |
+| `GOOGLE_CLIENT_ID` | ID de cliente OAuth del proyecto de Google Cloud | (vacio; sin esto no se puede conectar Google Calendar) |
+| `GOOGLE_CLIENT_SECRET` | Secreto de cliente OAuth del mismo proyecto | (vacio) |
+| `GOOGLE_SYNC_INTERVALO_MINUTOS` | Cada cuantos minutos se sincroniza en segundo plano con Google Calendar | `15` |
 
 Si accedes solo desde tu red local por `http://`, deja `SESSION_COOKIE_SECURE`
 y `DETRAS_DE_PROXY` en `False` (los valores por defecto). Si expones la web
@@ -280,7 +287,78 @@ que estas mirando): no hace falta crear una fila por cada repeticion.
 Se gestionan aparte, en `Calendario -> Categorias`: crea las que
 quieras, cada una con un nombre y un color. Si borras una categoria que
 ya tenia eventos asignados, esos eventos no se borran, simplemente se
-quedan sin categoria.
+quedan sin categoria. Si la categoria venia de un calendario de Google
+vinculado (ver siguiente seccion), ese calendario se pone en pausa en
+vez de quedar apuntando a una categoria inexistente.
+
+### Sincronizacion con Google Calendar (`Calendario -> Google Calendar`)
+
+Cada calendario de Google que elijas sincronizar se convierte en una
+categoria del calendario de la app (se crea sola, con el mismo nombre,
+la primera vez que la marcas). A partir de ahi la sincronizacion es
+**bidireccional** y **automatica**:
+
+- **Google -> app**: los eventos de cada calendario vinculado se
+  importan (y se mantienen actualizados) como eventos locales con esa
+  categoria, incluidos los recurrentes (usan el mismo sistema de
+  repeticion + excepciones que ya tiene la app) y las ocurrencias
+  sueltas que hayas cancelado o editado solo para un dia concreto desde
+  Google.
+- **App -> Google**: cuando creas, editas o eliminas un evento cuya
+  categoria esta vinculada a un calendario de Google, se refleja alla
+  al momento (ademas de reintentarse en segundo plano si en ese
+  instante no hay conexion). Si cambias un evento de categoria, se
+  mueve del calendario de Google viejo al nuevo (o se elimina de Google
+  si la nueva categoria ya no esta vinculada a ninguno).
+- Ademas de intentarlo al momento, un job en segundo plano revisa
+  **cada `GOOGLE_SYNC_INTERVALO_MINUTOS` minutos** (15 por defecto)
+  todos los cambios pendientes, en ambos sentidos, para todos los
+  usuarios con una cuenta conectada. Para que esto funcione, la web
+  (`run.py`) tiene que estar arrancada; no hace falta el bot de
+  Telegram para nada de esto.
+- Los calendarios de Google marcados como **"nomes lectura"** (los que
+  alguien te ha compartido sin permiso de edicion) se importan igual,
+  pero los eventos que crees en su categoria desde la app no se podran
+  subir a Google.
+- **Limitacion conocida**: si cancelas una ocurrencia de un evento
+  recurrente y despues la "restauras" desde la app (`Ocurrencia ->
+  Restaurar`), ese cambio no se sube a Google (recrear alla una
+  ocurrencia ya cancelada necesitaria logica adicional que, de
+  momento, no esta hecha). El resto de cambios en ocurrencias sueltas
+  (cancelar, editar) si se sincronizan en los dos sentidos.
+
+**Como configurarlo (una sola vez), en [Google Cloud
+Console](https://console.cloud.google.com/):**
+
+1. Crea un proyecto nuevo (o usa uno que ya tengas).
+2. En **"API y servicios" -> "Biblioteca"**, busca **"Google Calendar
+   API"** y actívala.
+3. En **"API y servicios" -> "Pantalla de consentimiento OAuth"**,
+   configúrala como tipo **"Externo"** (o "Interno" si usas Google
+   Workspace) y añádete a ti mismo como **usuario de prueba** (mientras
+   la app no esté publicada, solo los usuarios de prueba pueden
+   conectarse).
+4. En **"API y servicios" -> "Credenciales"**, crea unas credenciales
+   de tipo **"ID de cliente de OAuth"**, con tipo de aplicación **"Aplicación
+   web"**. En **"URI de redireccionamiento autorizados"**, añade la URL
+   de tu web seguida de `/calendario/google/callback`, por ejemplo
+   `https://tu-dominio.ngrok-free.app/calendario/google/callback`.
+5. Copia el **ID de cliente** y el **secreto de cliente** que te da
+   Google al `.env`, en `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
+   Reinicia `run.py`.
+6. Entra en `Calendario -> Google Calendar` y pulsa "Connectar amb
+   Google".
+
+**Sobre ngrok y la URL de redireccionamiento:** Google exige que la
+URL de vuelta (`redirect_uri`) coincida exactamente con la que
+autorizaste en el paso 4. Si usas ngrok con un dominio gratuito que
+cambia cada vez que lo arrancas, tendrás que volver a añadir la nueva
+URL en Google Cloud Console cada vez (Credenciales -> tu ID de cliente
+-> añadir URI). Para no tener que hacerlo, lo más cómodo es usar un
+**dominio fijo de ngrok** (`ngrok http --domain=tu-dominio-fijo.ngrok-free.app
+5000`, disponible también en el plan gratuito) y autorizar esa URL una
+sola vez. La conexión con Google tiene que hacerse por HTTPS (ngrok ya
+lo da), con `DETRAS_DE_PROXY=True` en el `.env`.
 
 ## Panel general (`Mi cuenta`)
 

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block titulo %}Google Calendar{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario') }}" class="volver">&larr; Tornar al calendari</a>
+
+    <span class="eyebrow">Sincronitzacio</span>
+    <h1>Google Calendar</h1>
+    <p class="subtitle">Cada calendari de Google que triis es converteix en una categoria del calendari</p>
+
+    {% if not google_configurado %}
+        <div class="card">
+            <p class="vacio">
+                Encara falta configurar les credencials de Google a l'arxiu <code>.env</code>
+                (<code>GOOGLE_CLIENT_ID</code> i <code>GOOGLE_CLIENT_SECRET</code>). Mira el
+                README per als passos per crear-les a Google Cloud Console.
+            </p>
+        </div>
+    {% elif not conectado %}
+        <div class="card">
+            <p>Encara no has connectat cap compte de Google.</p>
+            <a href="{{ url_for('calendario_google_conectar') }}" class="btn btn-primario">Connectar amb Google</a>
+        </div>
+    {% else %}
+        <div class="card">
+            <p>Compte de Google connectat.</p>
+            <div class="acciones">
+                <a href="{{ url_for('calendario_google_calendarios') }}" class="btn btn-primario">Triar calendaris a sincronitzar</a>
+                <form method="POST" action="{{ url_for('calendario_google_desconectar') }}"
+                      onsubmit="return confirm('Es desconnectara el teu compte de Google. Les categories i esdeveniments ja importats es queden tal com estaven, pero deixaran de sincronitzar-se. Vols continuar?');">
+                    <button type="submit" class="btn btn-peligro">Desconnectar</button>
+                </form>
+            </div>
+        </div>
+
+        {% if calendarios %}
+            <div class="card">
+                <h2 style="font-family: var(--font-mono); font-size:14px; margin-top:0;">Calendaris vinculats</h2>
+                <div class="lista-categorias-calendario">
+                    {% for cal in calendarios %}
+                        <div class="categoria-calendario-fila">
+                            {% if cal.categoria_color %}<span class="cat-dot cat-{{ cal.categoria_color }}"></span>{% endif %}
+                            <span class="nombre">
+                                {{ cal.nombre }}
+                                {% if cal.categoria_nombre %}<span class="tag">categoria: {{ cal.categoria_nombre }}</span>{% endif %}
+                                {% if not cal.sync_activo %}<span class="tag">en pausa</span>{% endif %}
+                                {% if cal.rol_acceso in ('reader', 'freeBusyReader') %}<span class="tag">nomes lectura</span>{% endif %}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="tag" style="margin: 16px 0 0;">
+                    La sincronitzacio es fa automaticament en segon pla cada {{ intervalo_minutos }}
+                    minuts (cal que la web estigui arrencada), i tambe a l'instant cada vegada que
+                    crees, edites o elimines un esdeveniment des d'aqui.
+                </p>
+            </div>
+        {% else %}
+            <p class="vacio">Encara no has triat cap calendari per sincronitzar.</p>
+        {% endif %}
+    {% endif %}
+{% endblock %}

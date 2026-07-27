@@ -24,6 +24,10 @@ from config import (
     SESSION_LIFETIME_DIAS,
     SESSION_COOKIE_SECURE,
     DETRAS_DE_PROXY,
+    FLASK_DEBUG,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_SYNC_INTERVALO_MINUTOS,
 )
 
 # Carpeta raiz del proyecto (un nivel por encima de esta carpeta "app"),
@@ -77,6 +81,7 @@ from . import caca_helpers
 from . import caca_routes
 from . import calendario_helpers
 from . import calendario_routes
+from . import calendario_google_routes
 from . import agenda_routes
 from . import telegram_helpers
 from . import telegram_routes
@@ -100,3 +105,42 @@ from .telegram_helpers import (
     vincular_chat_con_codigo,
     desvincular_telegram,
 )
+
+# =================================================================
+# Sincronizacion periodica con Google Calendar (en segundo plano)
+# =================================================================
+# Mientras la web este arrancada, cada GOOGLE_SYNC_INTERVALO_MINUTOS
+# (ver .env) se suben los cambios locales pendientes y se bajan los
+# cambios hechos desde Google, para todos los usuarios que tengan una
+# cuenta conectada. Solo se activa si hay credenciales configuradas.
+#
+# El chequeo de WERKZEUG_RUN_MAIN evita que, con FLASK_DEBUG=True,
+# el reloader de Flask (que arranca el proceso dos veces) acabe con
+# dos schedulers corriendo a la vez.
+if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
+    _debe_iniciar_scheduler = (not FLASK_DEBUG) or os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+    if _debe_iniciar_scheduler:
+        from datetime import datetime, timedelta as _timedelta
+
+        from apscheduler.schedulers.background import BackgroundScheduler
+
+        from .google_calendar_helpers import sincronizar_todos_los_usuarios
+
+        _scheduler_google = BackgroundScheduler(daemon=True)
+        _scheduler_google.add_job(
+            sincronizar_todos_los_usuarios,
+            "interval",
+            minutes=GOOGLE_SYNC_INTERVALO_MINUTOS,
+            id="google_calendar_sync",
+        )
+        # Ademas de la revision periodica, se hace una primera nada mas
+        # arrancar (unos segundos despues), para no esperar todo el
+        # intervalo a comprobar que la sincronizacion funciona.
+        _scheduler_google.add_job(
+            sincronizar_todos_los_usuarios,
+            "date",
+            run_date=datetime.now() + _timedelta(seconds=20),
+            id="google_calendar_sync_al_arrancar",
+        )
+        _scheduler_google.start()
+        print(f"Sincronizacion con Google Calendar programada cada {GOOGLE_SYNC_INTERVALO_MINUTOS} minutos.")

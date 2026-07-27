@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}Calendaris de Google{% endblock %}
+{% block main_class %}ancho{% endblock %}
+
+{% block contenido %}
+    <a href="{{ url_for('calendario_google') }}" class="volver">&larr; Tornar a Google Calendar</a>
+
+    <span class="eyebrow">Sincronitzacio</span>
+    <h1>Tria els calendaris a sincronitzar</h1>
+    <p class="subtitle">Cada un que marquis crea (o reactiva) una categoria amb el mateix nom</p>
+
+    <div class="card">
+        <form method="POST" action="{{ url_for('calendario_google_calendarios_guardar') }}">
+            <div class="lista-categorias-calendario">
+                {% for cal in calendarios %}
+                    {% set vinculo = vinculados.get(cal.id) %}
+                    <div class="categoria-calendario-fila">
+                        <input type="checkbox" name="sincronizar" id="cal-{{ loop.index }}" value="{{ cal.id }}"
+                               {{ 'checked' if vinculo and vinculo.sync_activo else '' }}>
+                        <label for="cal-{{ loop.index }}" class="nombre">
+                            {{ cal.nombre }}
+                            {% if cal.primario %}<span class="tag">principal</span>{% endif %}
+                            {% if cal.acceso in ('reader', 'freeBusyReader') %}<span class="tag">nomes lectura</span>{% endif %}
+                            {% if vinculo %}<span class="tag">categoria: {{ vinculo.categoria_nombre }}</span>{% endif %}
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="submit" style="margin-top:16px;">Guardar</button>
+        </form>
+
+        <p class="tag" style="margin: 16px 0 0;">
+            Desmarcar un calendari el posa en pausa (no s'esborra ni ell ni els esdeveniments ja
+            importats, simplement deixa de sincronitzar-se). Els "nomes lectura" es veuran a
+            l'app, pero els esdeveniments que hi creis aqui no es pujaran a Google.
+        </p>
+    </div>
+{% endblock %}

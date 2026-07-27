@@ -89,38 +89,6 @@ header {
     color: var(--text-muted);
 }
 
-/* Boton hamburguesa: oculto por defecto (pantallas anchas, donde el
-   nav ya cabe en linea), visible solo por debajo del breakpoint de
-   abajo, que es donde el nav pasa a ser un menu desplegable. */
-.nav-toggle {
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 4px;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-.nav-toggle span {
-    display: block;
-    width: 14px;
-    height: 2px;
-    background: var(--text-muted);
-    transition: transform 0.15s, opacity 0.15s;
-}
-
-/* Convierte las 3 rayas en una "X" cuando el menu esta abierto. */
-.nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-.nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
-.nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-
 nav {
     display: flex;
     justify-content: center;
@@ -140,6 +108,9 @@ nav a {
     border: 1px solid var(--border);
     border-radius: 3px;
     transition: border-color 0.15s, color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 nav a:hover {
@@ -147,33 +118,58 @@ nav a:hover {
     border-color: var(--red);
 }
 
-/* Pantallas estrechas (la mayoria de moviles en vertical): si las
-   opciones no caben comodas en 1 o 2 filas, el nav se oculta y se
-   convierte en un menu desplegable que abre el boton hamburguesa. */
+nav a.activo {
+    color: var(--text);
+    border-color: var(--red);
+}
+
+/* El icono de cada enlace solo se ve en movil (ver mas abajo); en
+   pantalles amples el nav es nomes text, com sempre. */
+.nav-icon {
+    display: none;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* Pantalles estretes (la majoria de mobils en vertical): el nav passa
+   a ser una unica fila d'icones que es desplaça en horitzontal si no
+   hi caben tots, en comptes d'un menu desplegable amagat darrere d'un
+   boto. Aixi tot es queda dalt (dins la capçalera) i sempre visible
+   sense haver de tocar cap boto per obrir-lo. */
 @media (max-width: 480px) {
-    .nav-toggle {
-        display: flex;
-    }
-
     nav {
-        display: none;
-        flex-direction: column;
-        align-items: stretch;
-        margin-top: 10px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 6px;
-        gap: 2px;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        margin: 10px -16px 0;
+        padding: 0 16px 6px;
     }
 
-    nav.abierto {
-        display: flex;
+    nav::-webkit-scrollbar {
+        display: none;
     }
 
     nav a {
-        text-align: center;
-        padding: 10px 12px;
+        flex-direction: column;
+        flex-shrink: 0;
+        gap: 3px;
+        min-width: 58px;
+        padding: 8px 6px;
+        font-size: 10px;
+        border-radius: 8px;
+    }
+
+    .nav-icon {
+        display: block;
+        width: 20px;
+        height: 20px;
+    }
+
+    .nav-label {
+        white-space: nowrap;
     }
 }
 
@@ -1688,64 +1684,6 @@ code {
     outline-offset: 1px;
 }
 
-/* -------------------- Barra de navegacion inferior -------------------- */
-/* Solo aparece con sesion iniciada y en pantallas de telefono: acceso
-   directo con el pulgar a las secciones principales, sin abrir el
-   menu hamburguesa de arriba (que sigue teniendo el resto de enlaces:
-   Caca, Tancar sessio...). */
-
-.bottom-nav {
-    display: none;
-}
-
-@media (max-width: 600px) {
-    body.con-bottom-nav {
-        padding-bottom: 90px;
-    }
-
-    .bottom-nav {
-        display: flex;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 40;
-        background: var(--surface);
-        border-top: 1px solid var(--border);
-        padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
-        justify-content: space-around;
-    }
-
-    .bottom-nav a {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 3px;
-        min-height: 48px;
-        padding: 6px 2px;
-        border-radius: 8px;
-        text-decoration: none;
-        color: var(--text-muted);
-        font-family: var(--font-mono);
-        font-size: 10px;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        transition: color 0.15s;
-    }
-
-    .bottom-nav a svg {
-        width: 20px;
-        height: 20px;
-        stroke: currentColor;
-    }
-
-    .bottom-nav a.activo {
-        color: var(--red-bright);
-    }
-
-    .bottom-nav a:active {
-        background: rgba(199, 30, 74, 0.12);
-    }
-}
+/* La navegacio principal en movil ara viu dalt, dins la capçalera
+   (veure les regles de "nav" / "nav a" / ".nav-icon" mes amunt), en
+   comptes d'una barra fixa a baix. */

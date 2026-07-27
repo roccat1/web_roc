@@ -297,6 +297,85 @@ def init_db():
         )
     """)
 
+    # =================================================================
+    # Sincronizacion con Google Calendar
+    # =================================================================
+    # Credenciales OAuth del usuario (una cuenta de Google por usuario).
+    # El access_token se refresca solo cuando caduca; lo importante para
+    # mantener la conexion es el refresh_token, que no caduca (a menos
+    # que el usuario revoque el acceso desde su cuenta de Google).
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_google_cuentas (
+            usuario_id INTEGER PRIMARY KEY,
+            refresh_token TEXT NOT NULL,
+            access_token TEXT,
+            token_expira TEXT,
+            conectado_en TEXT NOT NULL,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+        )
+    """)
+
+    # Que calendarios de Google ha elegido sincronizar el usuario. Cada
+    # uno se corresponde con una categoria del calendario de la app
+    # (categoria_id): los eventos que se importan de ese calendario de
+    # Google se guardan con esa categoria. sync_token es el que usa la
+    # Google Calendar API para traer solo lo que ha cambiado desde la
+    # ultima vez, en vez de descargarlo todo de nuevo cada vez.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_google_calendarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            google_calendar_id TEXT NOT NULL,
+            nombre TEXT NOT NULL,
+            categoria_id INTEGER,
+            sync_activo INTEGER NOT NULL DEFAULT 1,
+            rol_acceso TEXT,
+            sync_token TEXT,
+            ultima_sincronizacion TEXT,
+            UNIQUE (usuario_id, google_calendar_id),
+            FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
+            FOREIGN KEY (categoria_id) REFERENCES calendario_categorias (id)
+        )
+    """)
+
+    # Si al eliminar un evento (o al dejar de sincronizar su categoria)
+    # no se ha podido borrar todavia su copia en Google (sin conexion,
+    # token caducado...), se apunta aqui para reintentarlo en el
+    # siguiente ciclo de sincronizacion en vez de perder ese cambio.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS calendario_google_eliminaciones_pendientes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            google_calendar_id TEXT NOT NULL,
+            google_event_id TEXT NOT NULL,
+            creado TEXT NOT NULL,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+        )
+    """)
+
+    # Migracion sencilla: columnas de sincronizacion anadidas a la tabla
+    # de eventos ya existente (mismo truco que las demas columnas
+    # nuevas: si ya existen, SQLite lanza un error que se ignora).
+    # - google_calendario_id: a que fila de calendario_google_calendarios
+    #   pertenece este evento (si vino de Google, o si su categoria esta
+    #   vinculada a uno).
+    # - google_event_id: el ID del evento en la Google Calendar API.
+    # - google_actualizado: la fecha "updated" que devolvio Google la
+    #   ultima vez, para detectar cambios.
+    # - pendiente_subir: 1 si este evento tiene cambios locales que
+    #   todavia no se han podido subir a Google (se reintenta en el
+    #   siguiente ciclo).
+    for columna in (
+        "google_calendario_id INTEGER",
+        "google_event_id TEXT",
+        "google_actualizado TEXT",
+        "pendiente_subir INTEGER NOT NULL DEFAULT 0",
+    ):
+        try:
+            conn.execute(f"ALTER TABLE calendario_eventos ADD COLUMN {columna}")
+        except sqlite3.OperationalError:
+            pass
+
     # Indices: sin ellos, cada vista del calendario recorre entera la
     # tabla de eventos aunque solo haga falta un usuario o un rango de
     # fechas. Con pocos eventos no se nota, pero no cuesta nada tenerlos.
@@ -307,6 +386,13 @@ def init_db():
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_calendario_recordatorios_evento ON calendario_recordatorios (evento_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_calendario_eventos_google_event ON calendario_eventos (google_event_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_calendario_google_calendarios_usuario "
+        "ON calendario_google_calendarios (usuario_id)"
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_caducidades_usuario ON caducidades (usuario_id)")
 
