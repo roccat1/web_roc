@@ -36,7 +36,13 @@ from .calendario_helpers import (
     importar_ics,
     UMBRALES_RECORDATORIO_SUGERIDOS,
 )
-from .google_calendar_helpers import push_evento, push_excepcion, eliminar_evento_remoto, obtener_calendarios_vinculados
+from .google_calendar_helpers import (
+    push_evento,
+    push_excepcion,
+    push_restauracion,
+    eliminar_evento_remoto,
+    obtener_calendarios_vinculados,
+)
 
 NOMBRES_MESES_CALENDARIO = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -89,6 +95,13 @@ def _sincronizar_ocurrencia_con_google(evento_id, fecha):
         push_excepcion(evento_id, fecha)
     except Exception as error:
         print(f"[google-sync] No s'ha pogut sincronitzar l'ocurrencia del {fecha} (evento {evento_id}) amb Google: {error}")
+
+
+def _sincronizar_restauracion_con_google(evento_id, fecha):
+    try:
+        push_restauracion(evento_id, fecha)
+    except Exception as error:
+        print(f"[google-sync] No s'ha pogut sincronitzar la restauracio del {fecha} (evento {evento_id}) amb Google: {error}")
 
 
 @app.route("/calendario")
@@ -264,12 +277,12 @@ def calendario_nuevo():
         conn = get_db_connection()
         cursor = conn.execute("""
             INSERT INTO calendario_eventos
-                (usuario_id, titulo, categoria_id, fecha, hora, todo_el_dia, lugar,
+                (usuario_id, titulo, categoria_id, fecha, hora, hora_fin, todo_el_dia, lugar,
                  descripcion, recordatorio_dias, repetir, repetir_hasta)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             usuario_id, datos["titulo"], _categoria_id_valida(datos["categoria_id"], usuario_id),
-            datos["fecha"], datos["hora"], datos["todo_el_dia"], datos["lugar"],
+            datos["fecha"], datos["hora"], datos["hora_fin"], datos["todo_el_dia"], datos["lugar"],
             datos["descripcion"], max(datos["recordatorios_dias"]), datos["repetir"], datos["repetir_hasta"],
         ))
         evento_id = cursor.lastrowid
@@ -312,13 +325,13 @@ def calendario_editar(evento_id):
         conn = get_db_connection()
         conn.execute("""
             UPDATE calendario_eventos
-            SET titulo = ?, categoria_id = ?, fecha = ?, hora = ?, todo_el_dia = ?, lugar = ?,
+            SET titulo = ?, categoria_id = ?, fecha = ?, hora = ?, hora_fin = ?, todo_el_dia = ?, lugar = ?,
                 descripcion = ?, recordatorio_dias = ?, repetir = ?, repetir_hasta = ?,
                 aviso_enviado_fecha = NULL
             WHERE id = ?
         """, (
             datos["titulo"], _categoria_id_valida(datos["categoria_id"], usuario_id),
-            datos["fecha"], datos["hora"], datos["todo_el_dia"], datos["lugar"],
+            datos["fecha"], datos["hora"], datos["hora_fin"], datos["todo_el_dia"], datos["lugar"],
             datos["descripcion"], max(datos["recordatorios_dias"]), datos["repetir"], datos["repetir_hasta"],
             evento_id,
         ))
@@ -421,7 +434,7 @@ def calendario_ocurrencia_editar(evento_id, fecha):
             return redirect(url_for("calendario_ocurrencia_editar", evento_id=evento_id, fecha=fecha))
 
         guardar_excepcion_editada(
-            evento_id, fecha, datos["titulo"], datos["hora"], datos["todo_el_dia"],
+            evento_id, fecha, datos["titulo"], datos["hora"], datos["hora_fin"], datos["todo_el_dia"],
             datos["lugar"], datos["descripcion"],
         )
         _sincronizar_ocurrencia_con_google(evento_id, fecha)
@@ -447,11 +460,13 @@ def calendario_ocurrencia_restaurar(evento_id, fecha):
         flash("Aquest esdeveniment no existeix.")
         return redirect(url_for("calendario"))
 
-    # Nota: esto no se refleja en Google Calendar (si el evento esta
-    # sincronizado). Recrear alla una ocurrencia que se habia cancelado
-    # o editado requeriria logica adicional que, de momento, no esta
-    # implementada; la ocurrencia se restaura solo en la app.
+    # Nota: si el evento esta sincronizado con Google, se intenta
+    # reflejar tambien alla (ver push_restauracion). Es la unica
+    # sincronizacion que no es 100% fiable (depende de que Google deje
+    # "revivir" una instancia que el mismo habia cancelado); si falla,
+    # la ocurrencia se queda restaurada solo en la app, sin romper nada.
     eliminar_excepcion(evento_id, fecha)
+    _sincronizar_restauracion_con_google(evento_id, fecha)
     flash("S'ha restaurat aquesta ocurrencia tal com era a la serie.")
     return redirect(url_for("calendario_dia", fecha=fecha))
 

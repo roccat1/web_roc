@@ -124,7 +124,7 @@ def _ocurrencias_en_rango(fecha_evento, repetir, repetir_hasta, desde, hasta, fe
         fecha = _ocurrencia_n(fecha_evento, repetir, n)
 
 
-def calcular_estado_evento(fecha_ocurrencia, hora, umbrales_recordatorio):
+def calcular_estado_evento(fecha_ocurrencia, hora, umbrales_recordatorio, hora_fin=None):
     """
     Compara la fecha de la (proxima) ocurrencia de un evento con hoy y
     devuelve un diccionario con:
@@ -144,7 +144,12 @@ def calcular_estado_evento(fecha_ocurrencia, hora, umbrales_recordatorio):
     if dias < 0:
         return {"estado": "pasado", "dias": dias, "texto": f"Fa {abs(dias)} {palabra}"}
     if dias == 0:
-        texto = f"Avui a les {hora}" if hora else "Avui"
+        if hora and hora_fin:
+            texto = f"Avui de {hora} a {hora_fin}"
+        elif hora:
+            texto = f"Avui a les {hora}"
+        else:
+            texto = "Avui"
         return {"estado": "hoy", "dias": dias, "texto": texto}
     if dias <= umbral_maximo:
         return {"estado": "proximo", "dias": dias, "texto": f"Dins de {dias} {palabra}"}
@@ -255,14 +260,14 @@ def guardar_excepcion_cancelada(evento_id, fecha_ocurrencia):
         INSERT INTO calendario_excepciones (evento_id, fecha_ocurrencia, cancelada)
         VALUES (?, ?, 1)
         ON CONFLICT (evento_id, fecha_ocurrencia) DO UPDATE SET
-            cancelada = 1, titulo = NULL, hora = NULL, todo_el_dia = NULL,
+            cancelada = 1, titulo = NULL, hora = NULL, hora_fin = NULL, todo_el_dia = NULL,
             lugar = NULL, descripcion = NULL
     """, (evento_id, fecha_ocurrencia))
     conn.commit()
     conn.close()
 
 
-def guardar_excepcion_editada(evento_id, fecha_ocurrencia, titulo, hora, todo_el_dia, lugar, descripcion):
+def guardar_excepcion_editada(evento_id, fecha_ocurrencia, titulo, hora, hora_fin, todo_el_dia, lugar, descripcion):
     """Guarda un canvi (titol/hora/lloc/descripcio) que nomes s'aplica
     a aquesta ocurrencia concreta, sense afectar a la resta de la
     serie. (No permet canviar-la de dia: per aixo cal cancel·lar-la i
@@ -270,13 +275,16 @@ def guardar_excepcion_editada(evento_id, fecha_ocurrencia, titulo, hora, todo_el
     conn = get_db_connection()
     conn.execute("""
         INSERT INTO calendario_excepciones
-            (evento_id, fecha_ocurrencia, cancelada, titulo, hora, todo_el_dia, lugar, descripcion)
-        VALUES (?, ?, 0, ?, ?, ?, ?, ?)
+            (evento_id, fecha_ocurrencia, cancelada, titulo, hora, hora_fin, todo_el_dia, lugar, descripcion)
+        VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (evento_id, fecha_ocurrencia) DO UPDATE SET
-            cancelada = 0, titulo = excluded.titulo, hora = excluded.hora,
+            cancelada = 0, titulo = excluded.titulo, hora = excluded.hora, hora_fin = excluded.hora_fin,
             todo_el_dia = excluded.todo_el_dia, lugar = excluded.lugar,
             descripcion = excluded.descripcion
-    """, (evento_id, fecha_ocurrencia, titulo or None, hora or None, todo_el_dia, lugar or None, descripcion or None))
+    """, (
+        evento_id, fecha_ocurrencia, titulo or None, hora or None, hora_fin or None,
+        todo_el_dia, lugar or None, descripcion or None,
+    ))
     conn.commit()
     conn.close()
 
@@ -325,17 +333,19 @@ def _fila_a_evento(fila, ocurrencia=None, excepcion=None, umbrales=None, categor
 
     titulo = fila["titulo"]
     hora = fila["hora"]
+    hora_fin = fila["hora_fin"]
     todo_el_dia = fila["todo_el_dia"]
     lugar = fila["lugar"]
     descripcion = fila["descripcion"]
     if excepcion is not None:
         titulo = excepcion["titulo"] or titulo
         hora = excepcion["hora"] if excepcion["hora"] is not None else hora
+        hora_fin = excepcion["hora_fin"] if excepcion["hora_fin"] is not None else hora_fin
         todo_el_dia = excepcion["todo_el_dia"] if excepcion["todo_el_dia"] is not None else todo_el_dia
         lugar = excepcion["lugar"] if excepcion["lugar"] is not None else lugar
         descripcion = excepcion["descripcion"] if excepcion["descripcion"] is not None else descripcion
 
-    info = calcular_estado_evento(ocurrencia, hora, umbrales)
+    info = calcular_estado_evento(ocurrencia, hora, umbrales, hora_fin=hora_fin)
 
     return {
         "id": fila["id"],
@@ -347,6 +357,7 @@ def _fila_a_evento(fila, ocurrencia=None, excepcion=None, umbrales=None, categor
         "fecha": fila["fecha"],
         "fecha_ocurrencia": ocurrencia.isoformat(),
         "hora": hora,
+        "hora_fin": hora_fin,
         "todo_el_dia": bool(todo_el_dia),
         "lugar": lugar,
         "descripcion": descripcion,
@@ -614,6 +625,50 @@ def guardar_categorias_extra(evento_id, categoria_ids, usuario_id):
 # Validacion de formularios
 # =================================================================
 
+def _validar_rango_horas(hora_texto, hora_fin_texto, todo_el_dia):
+    """Valida la pareja hora d'inici / hora de fi que comparteixen el
+    formulari d'un esdeveniment i el d'una ocurrencia editada:
+    - Si es "tot el dia", cap de les dues es guarda.
+    - Si nomes s'indica l'hora d'inici, la de fi es calcula sola (1
+      hora despres, com fa Google Calendar en crear un esdeveniment).
+    - Si es donen les dues, la de fi ha de ser posterior a la d'inici
+      (no s'admeten esdeveniments que passin de la mitjanit).
+    Devuelve (hora_texto, hora_fin_texto, errores)."""
+    errores = []
+
+    if todo_el_dia:
+        return "", "", errores
+
+    if hora_texto:
+        try:
+            horas, minutos = hora_texto.split(":")
+            if not (0 <= int(horas) <= 23 and 0 <= int(minutos) <= 59):
+                raise ValueError
+        except ValueError:
+            errores.append("La hora d'inici no es valida.")
+            hora_texto = ""
+
+    if hora_fin_texto:
+        try:
+            horas, minutos = hora_fin_texto.split(":")
+            if not (0 <= int(horas) <= 23 and 0 <= int(minutos) <= 59):
+                raise ValueError
+        except ValueError:
+            errores.append("La hora de fi no es valida.")
+            hora_fin_texto = ""
+
+    if hora_texto and not hora_fin_texto:
+        hora, minuto = (int(x) for x in hora_texto.split(":"))
+        hora_fin_texto = f"{hora + 1:02d}:{minuto:02d}" if hora < 23 else "23:59"
+    elif hora_fin_texto and not hora_texto:
+        errores.append("Si indiques una hora de fi, cal indicar tambe l'hora d'inici.")
+        hora_fin_texto = ""
+    elif hora_texto and hora_fin_texto and hora_fin_texto <= hora_texto:
+        errores.append("L'hora de fi ha de ser posterior a l'hora d'inici.")
+
+    return hora_texto, hora_fin_texto, errores
+
+
 def validar_formulario_evento(form):
     """Valida y devuelve los datos del formulario de crear/editar un
     evento del calendario. Devuelve (datos, errores)."""
@@ -621,6 +676,7 @@ def validar_formulario_evento(form):
     categoria_id = form.get("categoria_id", type=int)
     fecha_texto = form.get("fecha", "").strip()
     hora_texto = form.get("hora", "").strip()
+    hora_fin_texto = form.get("hora_fin", "").strip()
     todo_el_dia = form.get("todo_el_dia") == "on"
     lugar = form.get("lugar", "").strip()
     descripcion = form.get("descripcion", "").strip()
@@ -639,16 +695,8 @@ def validar_formulario_evento(form):
         except ValueError:
             errores.append("La data no es valida.")
 
-    if todo_el_dia:
-        hora_texto = ""
-    elif hora_texto:
-        try:
-            horas, minutos = hora_texto.split(":")
-            if not (0 <= int(horas) <= 23 and 0 <= int(minutos) <= 59):
-                raise ValueError
-        except ValueError:
-            errores.append("La hora no es valida.")
-            hora_texto = ""
+    hora_texto, hora_fin_texto, errores_hora = _validar_rango_horas(hora_texto, hora_fin_texto, todo_el_dia)
+    errores += errores_hora
 
     # Recordatoris: uno o varios umbrales (checkboxes con los valores
     # sugeridos, mas uno "a mida" opcional en texto libre).
@@ -696,6 +744,7 @@ def validar_formulario_evento(form):
         "categoria_id": categoria_id or None,
         "fecha": fecha_texto,
         "hora": hora_texto or None,
+        "hora_fin": hora_fin_texto or None,
         "todo_el_dia": 1 if todo_el_dia else 0,
         "lugar": lugar or None,
         "descripcion": descripcion or None,
@@ -712,6 +761,7 @@ def validar_formulario_excepcion(form):
     nomes una ocurrencia concreta d'un esdeveniment recurrent."""
     titulo = form.get("titulo", "").strip()
     hora_texto = form.get("hora", "").strip()
+    hora_fin_texto = form.get("hora_fin", "").strip()
     todo_el_dia = form.get("todo_el_dia") == "on"
     lugar = form.get("lugar", "").strip()
     descripcion = form.get("descripcion", "").strip()
@@ -720,20 +770,13 @@ def validar_formulario_excepcion(form):
     if not titulo:
         errores.append("Escriu un titol.")
 
-    if todo_el_dia:
-        hora_texto = ""
-    elif hora_texto:
-        try:
-            horas, minutos = hora_texto.split(":")
-            if not (0 <= int(horas) <= 23 and 0 <= int(minutos) <= 59):
-                raise ValueError
-        except ValueError:
-            errores.append("La hora no es valida.")
-            hora_texto = ""
+    hora_texto, hora_fin_texto, errores_hora = _validar_rango_horas(hora_texto, hora_fin_texto, todo_el_dia)
+    errores += errores_hora
 
     datos = {
         "titulo": titulo,
         "hora": hora_texto or None,
+        "hora_fin": hora_fin_texto or None,
         "todo_el_dia": 1 if todo_el_dia else 0,
         "lugar": lugar or None,
         "descripcion": descripcion or None,
@@ -783,7 +826,7 @@ def _plegar_linea_ics(linea):
     return "\r\n ".join(partes)
 
 
-def _lineas_evento_ics(evento_id, titulo, fecha, hora, todo_el_dia, lugar, descripcion,
+def _lineas_evento_ics(evento_id, titulo, fecha, hora, hora_fin, todo_el_dia, lugar, descripcion,
                         repetir=None, repetir_hasta=None, recurrence_id=None):
     """Genera las lineas BEGIN:VEVENT..END:VEVENT de un evento (o de la
     excepcion de una ocurrencia, si se pasa 'recurrence_id')."""
@@ -801,6 +844,9 @@ def _lineas_evento_ics(evento_id, titulo, fecha, hora, todo_el_dia, lugar, descr
     else:
         hora_compacta = hora.replace(":", "") + "00"
         lineas.append(f"DTSTART:{fecha_compacta}T{hora_compacta}")
+        if hora_fin:
+            hora_fin_compacta = hora_fin.replace(":", "") + "00"
+            lineas.append(f"DTEND:{fecha_compacta}T{hora_fin_compacta}")
 
     lineas.append(f"SUMMARY:{_escapar_texto_ics(titulo)}")
     if lugar:
@@ -837,7 +883,7 @@ def generar_ics(usuario_id):
         excepciones_evento = excepciones.get(fila["id"], {})
 
         lineas += _lineas_evento_ics(
-            fila["id"], fila["titulo"], fila["fecha"], fila["hora"], fila["todo_el_dia"],
+            fila["id"], fila["titulo"], fila["fecha"], fila["hora"], fila["hora_fin"], fila["todo_el_dia"],
             fila["lugar"], fila["descripcion"], fila["repetir"], fila["repetir_hasta"],
         )
 
@@ -855,6 +901,7 @@ def generar_ics(usuario_id):
             lineas += _lineas_evento_ics(
                 fila["id"], exc["titulo"] or fila["titulo"], fecha_ocurrencia,
                 exc["hora"] if exc["hora"] is not None else fila["hora"],
+                exc["hora_fin"] if exc["hora_fin"] is not None else fila["hora_fin"],
                 exc["todo_el_dia"] if exc["todo_el_dia"] is not None else fila["todo_el_dia"],
                 exc["lugar"] if exc["lugar"] is not None else fila["lugar"],
                 exc["descripcion"] if exc["descripcion"] is not None else fila["descripcion"],
@@ -956,6 +1003,18 @@ def importar_ics(usuario_id, texto_ics):
         except (ValueError, IndexError):
             continue
 
+        hora_fin_texto = None
+        dtend = datos.get("DTEND")
+        if dtend and hora_texto:
+            try:
+                fecha_fin_iso, hora_fin_texto = _parsear_fecha_ics(dtend)
+                # Solo se aprovecha si acaba el mismo dia (la app no
+                # soporta eventos que pasen de la medianoche).
+                if fecha_fin_iso != fecha_iso:
+                    hora_fin_texto = None
+            except (ValueError, IndexError):
+                hora_fin_texto = None
+
         titulo = _desescapar_texto_ics(datos.get("SUMMARY", "Esdeveniment importat"))
         lugar = _desescapar_texto_ics(datos["LOCATION"]) if "LOCATION" in datos else None
         descripcion = _desescapar_texto_ics(datos["DESCRIPTION"]) if "DESCRIPTION" in datos else None
@@ -976,10 +1035,13 @@ def importar_ics(usuario_id, texto_ics):
 
         conn.execute("""
             INSERT INTO calendario_eventos
-                (usuario_id, titulo, fecha, hora, todo_el_dia, lugar, descripcion,
+                (usuario_id, titulo, fecha, hora, hora_fin, todo_el_dia, lugar, descripcion,
                  recordatorio_dias, repetir, repetir_hasta)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
-        """, (usuario_id, titulo, fecha_iso, hora_texto, todo_el_dia, lugar, descripcion, repetir, repetir_hasta))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+        """, (
+            usuario_id, titulo, fecha_iso, hora_texto, hora_fin_texto, todo_el_dia, lugar, descripcion,
+            repetir, repetir_hasta,
+        ))
         n_importados += 1
 
     conn.commit()

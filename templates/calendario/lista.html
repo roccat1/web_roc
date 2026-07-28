@@ -85,7 +85,7 @@
                             {% if evento.es_excepcio %}<span class="tag">editat nomes aquest dia</span>{% endif %}
                         </div>
                         <div class="evento-meta">
-                            {{ evento.fecha_ocurrencia }}{% if evento.hora %} &middot; {{ evento.hora }}{% endif %}
+                            {{ evento.fecha_ocurrencia }}{% if evento.hora %} &middot; {{ evento.hora }}{% if evento.hora_fin %}–{{ evento.hora_fin }}{% endif %}{% endif %}
                             &middot; <span class="badge">{{ evento.categoria_nombre }}</span>
                             {% for extra in evento.categorias_extra %}
                                 <span class="badge-cat"><span class="cat-dot cat-{{ extra.color }}"></span>{{ extra.nombre }}</span>

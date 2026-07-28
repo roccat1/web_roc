@@ -20,11 +20,14 @@ algo desde la web (ver los "push_*" que llama calendario_routes.py).
 Los fallos (sin conexion, token caducado...) nunca rompen la web: se
 marcan como pendientes y se reintentan en el siguiente ciclo.
 
-No se sincronizan ocurrencias "restauradas" (ver eliminar_excepcion en
-calendario_helpers.py): recrear en Google una ocurrencia que se habia
-cancelado desde la app requeriria logica adicional que, de momento, no
-esta implementada. El resto (evento completo, y cancelar/editar una
-ocurrencia concreta) si se sincroniza en los dos sentidos.
+Tambien se sincroniza "restaurar" una ocurrencia (deshacer una
+cancelacion o edicion puntual, ver eliminar_excepcion en
+calendario_helpers.py): se intenta devolver esa instancia en Google al
+estado normal de la serie. Esto es lo unico algo menos fiable al 100%,
+porque depende de que Google acepte "revivir" una instancia que el
+mismo habia marcado como cancelada; si no lo acepta, se registra el
+aviso en la consola y la ocurrencia se queda restaurada solo en la app
+(nada se rompe, simplemente no queda reflejado en Google).
 """
 
 from datetime import date, datetime, timedelta, timezone
@@ -350,10 +353,14 @@ def _construir_cuerpo_evento_google(fila_evento):
         cuerpo["start"] = {"date": fecha}
         cuerpo["end"] = {"date": dia_siguiente}
     else:
-        # La app no guarda hora de fin, asi que se asume 1 hora de
-        # duracion (igual de razonable que cualquier otro valor fijo).
+        # Si por lo que sea no hay hora de fin guardada (eventos creados
+        # antes de que existiera este campo), se asume 1 hora de
+        # duracion como ultimo recurso.
         inicio_dt = datetime.fromisoformat(f"{fecha}T{fila_evento['hora']}:00")
-        fin_dt = inicio_dt + timedelta(hours=1)
+        if fila_evento["hora_fin"]:
+            fin_dt = datetime.fromisoformat(f"{fecha}T{fila_evento['hora_fin']}:00")
+        else:
+            fin_dt = inicio_dt + timedelta(hours=1)
         cuerpo["start"] = {"dateTime": inicio_dt.isoformat(), "timeZone": TELEGRAM_TIMEZONE_NOMBRE}
         cuerpo["end"] = {"dateTime": fin_dt.isoformat(), "timeZone": TELEGRAM_TIMEZONE_NOMBRE}
 
@@ -397,10 +404,11 @@ def _aplicar_evento_google(conn, usuario_id, calendario_row, evento_google):
             guardar_excepcion_cancelada(maestro["id"], fecha_ocurrencia)
         else:
             fecha, hora = _fecha_hora_desde_google(evento_google["start"])
+            _, hora_fin = _fecha_hora_desde_google(evento_google["end"]) if "end" in evento_google else (None, None)
             todo_el_dia = 1 if hora is None else 0
             guardar_excepcion_editada(
                 maestro["id"], fecha_ocurrencia, evento_google.get("summary", "Sense titol"),
-                hora, todo_el_dia, evento_google.get("location"), evento_google.get("description"),
+                hora, hora_fin, todo_el_dia, evento_google.get("location"), evento_google.get("description"),
             )
         return
 
@@ -421,6 +429,7 @@ def _aplicar_evento_google(conn, usuario_id, calendario_row, evento_google):
         return
 
     fecha, hora = _fecha_hora_desde_google(evento_google["start"])
+    _, hora_fin = _fecha_hora_desde_google(evento_google["end"]) if "end" in evento_google else (None, None)
     todo_el_dia = 1 if hora is None else 0
     titulo = evento_google.get("summary") or "Sense titol"
     lugar = evento_google.get("location")
@@ -431,22 +440,22 @@ def _aplicar_evento_google(conn, usuario_id, calendario_row, evento_google):
     if evento_local is None:
         conn.execute("""
             INSERT INTO calendario_eventos
-                (usuario_id, titulo, categoria_id, fecha, hora, todo_el_dia, lugar, descripcion,
+                (usuario_id, titulo, categoria_id, fecha, hora, hora_fin, todo_el_dia, lugar, descripcion,
                  recordatorio_dias, repetir, repetir_hasta, google_calendario_id, google_event_id,
                  google_actualizado, pendiente_subir)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, 0)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, 0)
         """, (
-            usuario_id, titulo, calendario_row["categoria_id"], fecha, hora, todo_el_dia,
+            usuario_id, titulo, calendario_row["categoria_id"], fecha, hora, hora_fin, todo_el_dia,
             lugar, descripcion, repetir, repetir_hasta, calendario_row["id"], google_event_id, actualizado,
         ))
     else:
         conn.execute("""
             UPDATE calendario_eventos
-            SET titulo = ?, fecha = ?, hora = ?, todo_el_dia = ?, lugar = ?, descripcion = ?,
+            SET titulo = ?, fecha = ?, hora = ?, hora_fin = ?, todo_el_dia = ?, lugar = ?, descripcion = ?,
                 repetir = ?, repetir_hasta = ?, google_actualizado = ?
             WHERE id = ?
         """, (
-            titulo, fecha, hora, todo_el_dia, lugar, descripcion,
+            titulo, fecha, hora, hora_fin, todo_el_dia, lugar, descripcion,
             repetir, repetir_hasta, actualizado, evento_local["id"],
         ))
 
@@ -685,11 +694,13 @@ def _buscar_instancia_google(servicio, google_calendar_id, google_event_id, fech
     la que corresponde a 'fecha_ocurrencia' (ISO YYYY-MM-DD) y devuelve
     su propio ID (distinto del ID de la serie), o None si no la
     encuentra (por ejemplo, si esa ocurrencia no cae dentro del rango
-    que devuelve Google)."""
+    que devuelve Google). Incluye tambien instancias ya canceladas
+    (showDeleted=True), porque para restaurar una hace falta encontrar
+    su ID igualmente."""
     pagina = None
     while True:
         respuesta = servicio.events().instances(
-            calendarId=google_calendar_id, eventId=google_event_id, pageToken=pagina,
+            calendarId=google_calendar_id, eventId=google_event_id, pageToken=pagina, showDeleted=True,
         ).execute()
         for instancia in respuesta.get("items", []):
             punto_temporal = instancia.get("originalStartTime") or instancia.get("start")
@@ -744,6 +755,9 @@ def push_excepcion(evento_id, fecha_ocurrencia):
         if excepcion is not None:
             datos_ocurrencia["titulo"] = excepcion["titulo"] or fila["titulo"]
             datos_ocurrencia["hora"] = excepcion["hora"] if excepcion["hora"] is not None else fila["hora"]
+            datos_ocurrencia["hora_fin"] = (
+                excepcion["hora_fin"] if excepcion["hora_fin"] is not None else fila["hora_fin"]
+            )
             datos_ocurrencia["todo_el_dia"] = (
                 excepcion["todo_el_dia"] if excepcion["todo_el_dia"] is not None else fila["todo_el_dia"]
             )
@@ -763,6 +777,74 @@ def push_excepcion(evento_id, fecha_ocurrencia):
         print(f"[google-sync] No se pudo sincronizar la ocurrencia del {fecha_ocurrencia} (evento {evento_id}): {error}")
     except Exception as error:
         print(f"[google-sync] No se pudo sincronizar la ocurrencia del {fecha_ocurrencia} (evento {evento_id}): {error}")
+
+
+def push_restauracion(evento_id, fecha_ocurrencia):
+    """Refleja en Google que una ocurrencia concreta ha vuelto a ser
+    igual que el resto de la serie, tras 'Ocurrencia -> Restaurar' en
+    la app (deshace una cancelacion o una edicion puntual). Se intenta
+    dejar esa instancia en Google con los mismos datos que tendria por
+    defecto segun el evento principal.
+
+    Es la unica de las sincronizaciones que no es 100% fiable: si la
+    ocurrencia estaba cancelada en Google, "revivirla" depende de que
+    Google acepte volver a poner esa instancia como 'confirmed' (no
+    todas las cuentas se comportan igual). Si no lo acepta, se registra
+    el aviso y la ocurrencia se queda restaurada solo en la app: no
+    rompe nada, simplemente no queda reflejado en Google."""
+    conn = get_db_connection()
+    fila = conn.execute("SELECT * FROM calendario_eventos WHERE id = ?", (evento_id,)).fetchone()
+    conn.close()
+    if fila is None or not fila["google_event_id"] or not fila["google_calendario_id"]:
+        return
+
+    conn = get_db_connection()
+    calendario_row = conn.execute(
+        "SELECT * FROM calendario_google_calendarios WHERE id = ?", (fila["google_calendario_id"],)
+    ).fetchone()
+    conn.close()
+    if calendario_row is None or calendario_row["rol_acceso"] in _ROLES_SOLO_LECTURA:
+        return
+
+    credenciales = obtener_credenciales(fila["usuario_id"])
+    if credenciales is None:
+        return
+
+    # Los datos "por defecto" de esta ocurrencia son los del evento
+    # principal, aplicados a la fecha concreta (sin recurrencia: se
+    # esta editando solo esta instancia, no toda la serie).
+    datos_ocurrencia = dict(fila)
+    datos_ocurrencia["fecha"] = fecha_ocurrencia
+    datos_ocurrencia["repetir"] = "ninguna"
+    datos_ocurrencia["repetir_hasta"] = None
+    cuerpo = _construir_cuerpo_evento_google(datos_ocurrencia)
+    cuerpo["status"] = "confirmed"
+
+    try:
+        servicio = _servicio_calendar(credenciales)
+        instancia_id = _buscar_instancia_google(
+            servicio, calendario_row["google_calendar_id"], fila["google_event_id"], fecha_ocurrencia
+        )
+        if instancia_id is None:
+            return
+
+        try:
+            servicio.events().patch(
+                calendarId=calendario_row["google_calendar_id"], eventId=instancia_id, body=cuerpo
+            ).execute()
+        except HttpError as error_patch:
+            # Si la instancia estaba cancelada, algunas cuentas no
+            # dejan reactivarla con un patch parcial; se reintenta una
+            # vez con un update completo antes de darse por vencido.
+            print(f"[google-sync] El patch para restaurar ha fallado, se reintenta con update: {error_patch}")
+            servicio.events().update(
+                calendarId=calendario_row["google_calendar_id"], eventId=instancia_id, body=cuerpo
+            ).execute()
+    except Exception as error:
+        print(
+            f"[google-sync] No se pudo restaurar en Google la ocurrencia del {fecha_ocurrencia} "
+            f"(evento {evento_id}): {error}"
+        )
 
 
 # =================================================================

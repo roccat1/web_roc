@@ -40,7 +40,7 @@
                         {% for evento in dia.eventos %}
                             <a href="{{ url_for('calendario_dia', fecha=dia.fecha) }}" class="semana-evento">
                                 <span class="cat-dot cat-{{ evento.categoria_color }}"></span>
-                                {% if evento.hora %}<span class="semana-evento-hora">{{ evento.hora }}</span>{% endif %}
+                                {% if evento.hora %}<span class="semana-evento-hora">{{ evento.hora }}{% if evento.hora_fin %}–{{ evento.hora_fin }}{% endif %}</span>{% endif %}
                                 <span class="semana-evento-titulo">{{ evento.titulo }}</span>
                             </a>
                         {% endfor %}

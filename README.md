@@ -262,7 +262,9 @@ Cada evento tiene:
 - **Categoria** (opcional): las creas tu mismo en `Calendario ->
   Categorias`, cada una con un nombre y un color a elegir entre 8
   disponibles
-- **Fecha**, y **todo el dia** o **a una hora concreta**
+- **Fecha**, y **todo el dia** o **con hora de inicio y de fin** (si solo
+  pones la de inicio, la de fin se calcula sola 1 hora despues, como
+  hace Google Calendar al crear un evento nuevo)
 - **Lugar** y **descripcion** (opcionales)
 - **Avisar con antelacion (dias)**: cuantos dias antes quieres el
   recordatorio (0 = el mismo dia)

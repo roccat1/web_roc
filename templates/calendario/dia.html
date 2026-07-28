@@ -26,7 +26,7 @@
                             {% if evento.es_excepcio %}<span class="tag">editat nomes aquest dia</span>{% endif %}
                         </div>
                         <div class="evento-meta">
-                            {% if evento.todo_el_dia %}Tot el dia{% else %}{{ evento.hora }}{% endif %}
+                            {% if evento.todo_el_dia %}Tot el dia{% elif evento.hora_fin %}{{ evento.hora }}–{{ evento.hora_fin }}{% else %}{{ evento.hora }}{% endif %}
                             &middot; <span class="badge">{{ evento.categoria_nombre }}</span>
                             {% for extra in evento.categorias_extra %}
                                 <span class="badge-cat"><span class="cat-dot cat-{{ extra.color }}"></span>{{ extra.nombre }}</span>

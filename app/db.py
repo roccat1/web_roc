@@ -220,6 +220,7 @@ def init_db():
             categoria_id INTEGER,
             fecha TEXT NOT NULL,
             hora TEXT,
+            hora_fin TEXT,
             todo_el_dia INTEGER NOT NULL DEFAULT 1,
             lugar TEXT,
             descripcion TEXT,
@@ -289,6 +290,7 @@ def init_db():
             cancelada INTEGER NOT NULL DEFAULT 0,
             titulo TEXT,
             hora TEXT,
+            hora_fin TEXT,
             todo_el_dia INTEGER,
             lugar TEXT,
             descripcion TEXT,
@@ -370,11 +372,20 @@ def init_db():
         "google_event_id TEXT",
         "google_actualizado TEXT",
         "pendiente_subir INTEGER NOT NULL DEFAULT 0",
+        "hora_fin TEXT",
     ):
         try:
             conn.execute(f"ALTER TABLE calendario_eventos ADD COLUMN {columna}")
         except sqlite3.OperationalError:
             pass
+
+    # Misma migracion para la hora de fin en las excepciones puntuales
+    # (una ocurrencia editada tambien puede tener su propia hora de fin,
+    # distinta a la del resto de la serie).
+    try:
+        conn.execute("ALTER TABLE calendario_excepciones ADD COLUMN hora_fin TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     # Indices: sin ellos, cada vista del calendario recorre entera la
     # tabla de eventos aunque solo haga falta un usuario o un rango de

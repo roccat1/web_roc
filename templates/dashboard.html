@@ -103,7 +103,7 @@
                     {% for evento in proximos_eventos %}
                         <tr>
                             <td data-label="Titol"><span class="cat-dot cat-{{ evento.categoria_color }}"></span> {{ evento.titulo }}</td>
-                            <td data-label="Data">{{ evento.fecha_ocurrencia }}{% if evento.hora %} {{ evento.hora }}{% endif %}</td>
+                            <td data-label="Data">{{ evento.fecha_ocurrencia }}{% if evento.hora %} {{ evento.hora }}{% if evento.hora_fin %}–{{ evento.hora_fin }}{% endif %}{% endif %}</td>
                             <td data-label="Estat"><span class="dias-restantes {{ evento.estado }}">{{ evento.texto_estado }}</span></td>
                         </tr>
                     {% endfor %}

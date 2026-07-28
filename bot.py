@@ -344,7 +344,12 @@ async def comando_calendario(update: Update, context: ContextTypes.DEFAULT_TYPE)
     emoji_por_estado = {"hoy": "\U0001F534", "proximo": "\U0001F7E1", "futuro": "\U0001F7E2"}
     lineas = ["*Propers esdeveniments:*", ""]
     for item in items[:15]:
-        hora = f" {item['hora']}" if item["hora"] else ""
+        if item["hora"] and item["hora_fin"]:
+            hora = f" {item['hora']}-{item['hora_fin']}"
+        elif item["hora"]:
+            hora = f" {item['hora']}"
+        else:
+            hora = ""
         repeticion = " \U0001F501" if item["repetir"] != "ninguna" else ""
         lineas.append(
             f"{emoji_por_estado[item['estado']]} {item['fecha_ocurrencia']}{hora} - "

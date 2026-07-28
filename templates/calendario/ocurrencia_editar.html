@@ -27,9 +27,13 @@
             </div>
 
             <div class="campo" id="campo-hora">
-                <label for="hora">Hora</label>
+                <label for="hora">Hora d'inici</label>
                 <input type="time" id="hora" name="hora"
                        value="{{ (excepcion['hora'] if excepcion and excepcion['hora'] else evento['hora']) or '' }}">
+                <label for="hora_fin" style="margin-top:10px;">Hora de fi</label>
+                <input type="time" id="hora_fin" name="hora_fin"
+                       value="{{ (excepcion['hora_fin'] if excepcion and excepcion['hora_fin'] else evento['hora_fin']) or '' }}">
+                <p class="tag" style="margin: 6px 0 0;">Si no la canvies, es posa sola 1 hora despres.</p>
             </div>
 
             <div class="campo">

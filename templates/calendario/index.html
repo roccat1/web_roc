@@ -52,7 +52,7 @@
                                 <span class="mini-puntos">
                                     {% for evento in dia.eventos[:4] %}
                                         <span class="cat-dot cat-{{ evento.categoria_color }}"
-                                              title="{{ evento.titulo }}{% if evento.hora %} · {{ evento.hora }}{% endif %}"></span>
+                                              title="{{ evento.titulo }}{% if evento.hora %} · {{ evento.hora }}{% if evento.hora_fin %}–{{ evento.hora_fin }}{% endif %}{% endif %}"></span>
                                     {% endfor %}
                                     {% if dia.eventos | length > 4 %}
                                         <span class="mini-mas">+{{ dia.eventos | length - 4 }}</span>
@@ -90,7 +90,7 @@
                             {% if evento.es_excepcio %}<span class="tag">editat</span>{% endif %}
                         </div>
                         <div class="evento-meta">
-                            {{ evento.fecha_ocurrencia }}{% if evento.hora %} &middot; {{ evento.hora }}{% endif %}
+                            {{ evento.fecha_ocurrencia }}{% if evento.hora %} &middot; {{ evento.hora }}{% if evento.hora_fin %}–{{ evento.hora_fin }}{% endif %}{% endif %}
                             &middot; {{ evento.categoria_nombre }}
                             &middot; <span class="dias-restantes {{ evento.estado }}">{{ evento.texto_estado }}</span>
                             {% if evento.estado == 'proximo' %}

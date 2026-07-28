@@ -59,8 +59,11 @@
             </div>
 
             <div class="campo" id="campo-hora">
-                <label for="hora">Hora</label>
+                <label for="hora">Hora d'inici</label>
                 <input type="time" id="hora" name="hora" value="{{ evento['hora'] or '' }}">
+                <label for="hora_fin" style="margin-top:10px;">Hora de fi</label>
+                <input type="time" id="hora_fin" name="hora_fin" value="{{ evento['hora_fin'] or '' }}">
+                <p class="tag" style="margin: 6px 0 0;">Si no la canvies, es posa sola 1 hora despres.</p>
             </div>
 
             <div class="campo">
@@ -132,6 +135,17 @@
         }
         casillaTodoElDia.addEventListener('change', actualizarCampoHora);
         actualizarCampoHora();
+
+        const campoHoraInicio = document.getElementById('hora');
+        const campoHoraFin = document.getElementById('hora_fin');
+        campoHoraInicio.addEventListener('change', function () {
+            if (campoHoraInicio.value && !campoHoraFin.value) {
+                const [h, m] = campoHoraInicio.value.split(':').map(Number);
+                const horaFin = h < 23 ? h + 1 : 23;
+                const minutoFin = h < 23 ? m : 59;
+                campoHoraFin.value = String(horaFin).padStart(2, '0') + ':' + String(minutoFin).padStart(2, '0');
+            }
+        });
 
         const selectRepetir = document.getElementById('repetir');
         const campoRepetirHasta = document.getElementById('campo-repetir-hasta');
